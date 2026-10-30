@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>RUN AND RUN // 3D Cyberpunk Endless Runner</title>
+  <title>RUN NETAJI RUN // European Tour 3D</title>
   <link rel="stylesheet" href="style.css">
-  <meta name="description" content="RUN AND RUN: A futuristic 3D cyberpunk endless runner featuring gravity flips, shape-shifting forms, neural overclock bullet-time, and dynamic chase AI.">
+  <meta name="description" content="RUN NETAJI RUN: A hilarious 3D endless runner where an Indian Politician sprints through European cobblestone streets while pursued by an excited crowd of voters and journalists!">
 
   <!-- ES Module Importmap for Three.js & Post-Processing -->
   <script type="importmap">
@@ -22,7 +22,7 @@
     <!-- 3D WebGL Canvas -->
     <canvas id="game-canvas"></canvas>
 
-    <!-- Retro-futuristic scanlines overlay -->
+    <!-- Warm sunlight vignette -->
     <div class="scanlines"></div>
 
     <!-- UI Overlay Layer -->
@@ -41,22 +41,22 @@
               <div id="hud-distance" class="hud-value">0m</div>
             </div>
             <div class="hud-stat-box gold-stat">
-              <div class="hud-label">BITS</div>
+              <div class="hud-label">LADDOOS</div>
               <div id="hud-coins" class="hud-value">0</div>
             </div>
           </div>
 
           <div class="hud-right">
-            <!-- Threat Radar (Hunter Apex Boss) -->
+            <!-- Chasing Public Crowd Radar -->
             <div id="hud-threat" class="hud-threat-box">
-              <div class="hud-label">HUNTER APEX</div>
+              <div class="hud-label">THE PUBLIC</div>
               <div id="hud-threat-dist" class="hud-value">38m</div>
             </div>
 
             <!-- Combo Multiplier Badge -->
             <div id="hud-combo" class="hud-combo-badge hidden">
               <span id="hud-combo-val" class="combo-num">x2</span>
-              <span id="hud-combo-tier" class="combo-tier">SWEET</span>
+              <span id="hud-combo-tier" class="combo-tier">CLEAN SPRINT</span>
             </div>
 
             <!-- Pause Button -->
@@ -66,51 +66,51 @@
 
         <!-- Powerup Badges -->
         <div id="hud-powerups" class="hud-powerups-container">
-          <div id="p-shield" class="powerup-badge" title="Cyber Shield">🛡️</div>
-          <div id="p-magnet" class="powerup-badge" title="Coin Magnet">🧲</div>
-          <div id="p-multiplier" class="powerup-badge" title="2x Score">⚡</div>
-          <div id="p-jetpack" class="powerup-badge" title="Jetpack Rocket">🚀</div>
+          <div id="p-shield" class="powerup-badge" title="Z-Plus Security">🛡️</div>
+          <div id="p-magnet" class="powerup-badge" title="Voter Magnet">🧲</div>
+          <div id="p-multiplier" class="powerup-badge" title="Double Mandate 2x">⚡</div>
+          <div id="p-jetpack" class="powerup-badge" title="Chai & Samosa Turbo">☕</div>
         </div>
 
         <!-- Zone Announcement Banner -->
         <div id="zone-banner" class="zone-banner hidden">
-          <div id="zone-title" class="zone-title">MAGNET FLUX ZONE</div>
-          <div id="zone-desc" class="zone-desc">Coins gravitationally pulled to runner!</div>
+          <div id="zone-title" class="zone-title">PARISIAN BOULEVARD</div>
+          <div id="zone-desc" class="zone-desc">Campaign sprint through European cafes!</div>
         </div>
 
-        <!-- Floating Near-Miss & Hype Popups Container -->
+        <!-- Floating Hype Popups Container -->
         <div id="popups-container"></div>
 
         <!-- Form Switcher HUD -->
         <div class="hud-forms">
-          <div id="btn-form-runner" class="btn-form active" title="Cyber Runner (Jump/Slide)">
-            <span class="form-icon">⚡</span>
-            <span class="form-name">RUNNER</span>
+          <div id="btn-form-runner" class="btn-form active" title="Netaji Sprint (Jump/Slide)">
+            <span class="form-icon">🏃‍♂️</span>
+            <span class="form-name">NETAJI</span>
             <span class="form-key">1</span>
           </div>
-          <div id="btn-form-drone" class="btn-form" title="Aero-Glider Drone (Glides over low lasers)">
-            <span class="form-icon">🛸</span>
-            <span class="form-name">DRONE</span>
+          <div id="btn-form-drone" class="btn-form" title="Vintage Vespa Scooter (Glides over tables)">
+            <span class="form-icon">🛵</span>
+            <span class="form-name">VESPA</span>
             <span class="form-key">2</span>
           </div>
-          <div id="btn-form-orb" class="btn-form" title="Quantum Gyro Orb (Rolls under gantries)">
+          <div id="btn-form-orb" class="btn-form" title="Roly-Poly Netaji (Rolls under laundry lines)">
             <span class="form-icon">🔮</span>
-            <span class="form-name">ORB</span>
+            <span class="form-name">ROLY-POLY</span>
             <span class="form-key">3</span>
           </div>
         </div>
 
-        <!-- Neural Overclock (Bullet Time) Energy Bar -->
+        <!-- Chai Energy / Stamina Bar -->
         <div class="hud-energy-container">
           <div class="energy-bar-bg">
             <div id="hud-energy-bar" class="energy-bar-fill"></div>
           </div>
-          <div id="hud-energy-hint" class="energy-hint">NEURAL OVERCLOCK [HOLD SHIFT]</div>
+          <div id="hud-energy-hint" class="energy-hint">CHAI STAMINA [HOLD SHIFT]</div>
         </div>
 
         <!-- Mobile Action Buttons -->
         <div class="mobile-controls">
-          <button id="btn-mobile-overclock" class="btn-mobile-action" style="border-color: var(--neon-magenta)">TIME</button>
+          <button id="btn-mobile-overclock" class="btn-mobile-action" style="border-color: #ea580c">CHAI</button>
           <button id="btn-mobile-slide" class="btn-mobile-action">SLIDE</button>
           <button id="btn-mobile-jump" class="btn-mobile-action">JUMP</button>
         </div>
@@ -119,8 +119,8 @@
       <!-- MAIN MENU -->
       <div id="main-menu" class="modal-overlay">
         <div class="modal-panel">
-          <h1 class="title-glitch">RUN AND RUN</h1>
-          <div class="title-sub">NEO-TOKYO CYBERPUNK ENDLESS RUNNER</div>
+          <h1 class="title-glitch">RUN NETAJI RUN</h1>
+          <div class="title-sub">EUROPEAN TOUR // CAMPAIGN ON THE RUN</div>
 
           <div class="menu-stats-row">
             <div class="menu-stat">
@@ -128,16 +128,16 @@
               <div id="menu-best" class="stat-num">0</div>
             </div>
             <div class="menu-stat">
-              <div class="stat-title">QUANTUM BITS</div>
-              <div id="menu-coins" class="stat-num" style="color: var(--neon-yellow)">0</div>
+              <div class="stat-title">LADDOOS HARVESTED</div>
+              <div id="menu-coins" class="stat-num" style="color: var(--gold-primary)">0</div>
             </div>
           </div>
 
           <div class="menu-buttons">
-            <button id="btn-play" class="btn-cyber btn-cyber-primary">START RUN</button>
-            <button id="btn-daily" class="btn-cyber btn-cyber-daily">DAILY CHALLENGE</button>
-            <button id="btn-shop" class="btn-cyber">CYBER GARAGE</button>
-            <button id="btn-missions" class="btn-cyber">MISSIONS</button>
+            <button id="btn-play" class="btn-cyber btn-cyber-primary">START CAMPAIGN</button>
+            <button id="btn-daily" class="btn-cyber btn-cyber-daily">DAILY ELECTION RALLY</button>
+            <button id="btn-shop" class="btn-cyber">NETAJI'S WARDROBE</button>
+            <button id="btn-missions" class="btn-cyber">ELECTION MANIFESTO</button>
             <button id="btn-settings" class="btn-cyber">SETTINGS</button>
             <button id="btn-controls" class="btn-cyber">HOW TO PLAY</button>
           </div>
@@ -148,10 +148,10 @@
       <div id="pause-menu" class="modal-overlay hidden">
         <div class="modal-panel" style="max-width: 420px">
           <h2 class="title-glitch" style="font-size: 32px">PAUSED</h2>
-          <div class="title-sub">SYSTEM STANDBY</div>
+          <div class="title-sub">TAKING A CHAI BREAK ☕</div>
 
           <div class="menu-buttons">
-            <button id="btn-resume" class="btn-cyber btn-cyber-primary">RESUME</button>
+            <button id="btn-resume" class="btn-cyber btn-cyber-primary">RESUME RUN</button>
             <button id="btn-pause-restart" class="btn-cyber">RESTART</button>
             <button id="btn-pause-menu" class="btn-cyber">MAIN MENU</button>
           </div>
@@ -161,8 +161,8 @@
       <!-- GAME OVER MENU -->
       <div id="game-over-menu" class="modal-overlay hidden">
         <div class="modal-panel">
-          <h2 class="title-glitch" style="font-size: 36px; color: var(--neon-magenta)">SYSTEM TERMINATED</h2>
-          <div id="go-mode-tag" class="title-sub">CAUGHT BY HUNTER APEX</div>
+          <h2 class="title-glitch" style="font-size: 36px; color: #dc2626">CAUGHT BY THE CROWD!</h2>
+          <div id="go-mode-tag" class="title-sub">SWARMED FOR SELFIES & INTERVIEWS! 📸</div>
 
           <div class="go-stats-grid">
             <div class="go-stat-card">
@@ -170,48 +170,48 @@
               <div id="go-score" class="go-stat-val">0</div>
             </div>
             <div class="go-stat-card">
-              <div class="go-stat-title">DISTANCE</div>
+              <div class="go-stat-title">DISTANCE SPRINTED</div>
               <div id="go-distance" class="go-stat-val">0m</div>
             </div>
             <div class="go-stat-card">
-              <div class="go-stat-title">BITS COLLECTED</div>
-              <div id="go-coins" class="go-stat-val" style="color: var(--neon-yellow)">0</div>
+              <div class="go-stat-title">LADDOOS COLLECTED</div>
+              <div id="go-coins" class="go-stat-val" style="color: var(--gold-primary)">0</div>
             </div>
             <div class="go-stat-card">
-              <div class="go-stat-title">NEAR MISSES</div>
-              <div id="go-nearmiss" class="go-stat-val" style="color: var(--neon-cyan)">0</div>
+              <div class="go-stat-title">NARROW DODGES</div>
+              <div id="go-nearmiss" class="go-stat-val" style="color: #16a34a">0</div>
             </div>
           </div>
 
-          <div style="font-family: 'Orbitron'; font-size: 13px; color: #8899bb; margin-bottom: 20px;">
-            ALL-TIME BEST: <span id="go-best" style="color: #ffffff; font-weight: 700;">0</span>
+          <div style="font-family: 'Rajdhani'; font-size: 15px; color: var(--text-muted); margin-bottom: 20px;">
+            ALL-TIME BEST: <span id="go-best" style="color: var(--text-dark); font-weight: 800;">0</span>
           </div>
 
           <div class="menu-buttons">
             <button id="btn-restart" class="btn-cyber btn-cyber-primary">RUN AGAIN</button>
-            <button id="btn-share" class="btn-cyber">COPY SCORE</button>
+            <button id="btn-share" class="btn-cyber">SHARE SCORE</button>
             <button id="btn-go-menu" class="btn-cyber">MAIN MENU</button>
           </div>
         </div>
       </div>
 
-      <!-- CYBER GARAGE (SHOP) -->
+      <!-- SHOP (NETAJI'S WARDROBE) -->
       <div id="shop-menu" class="modal-overlay hidden">
         <div class="modal-panel">
           <button class="btn-close-modal">✕</button>
-          <h2 class="title-glitch" style="font-size: 28px">CYBER GARAGE</h2>
-          <div class="title-sub">BALANCE: <span id="shop-coins" style="color: var(--neon-yellow); font-weight: 700;">0</span> BITS</div>
+          <h2 class="title-glitch" style="font-size: 28px">NETAJI'S WARDROBE</h2>
+          <div class="title-sub">BALANCE: <span id="shop-coins" style="color: var(--gold-primary); font-weight: 800;">0</span> LADDOOS</div>
 
           <div id="shop-items-grid" class="shop-grid"></div>
         </div>
       </div>
 
-      <!-- MISSIONS MODAL -->
+      <!-- MISSIONS (ELECTION MANIFESTO) -->
       <div id="missions-menu" class="modal-overlay hidden">
         <div class="modal-panel">
           <button class="btn-close-modal">✕</button>
-          <h2 class="title-glitch" style="font-size: 28px">DIRECTIVE MISSIONS</h2>
-          <div class="title-sub">COMPLETE OBJECTIVES FOR BONUS BITS</div>
+          <h2 class="title-glitch" style="font-size: 28px">ELECTION MANIFESTO</h2>
+          <div class="title-sub">FULFILL CAMPAIGN PROMISES FOR BONUS LADDOOS</div>
 
           <div id="missions-list" class="missions-list"></div>
         </div>
@@ -221,8 +221,8 @@
       <div id="settings-menu" class="modal-overlay hidden">
         <div class="modal-panel" style="max-width: 440px">
           <button class="btn-close-modal">✕</button>
-          <h2 class="title-glitch" style="font-size: 28px">SYSTEM CONFIG</h2>
-          <div class="title-sub">AUDIO & VISUAL PERFORMANCE</div>
+          <h2 class="title-glitch" style="font-size: 28px">SETTINGS</h2>
+          <div class="title-sub">AUDIO & VISUAL TASTE</div>
 
           <div class="setting-row">
             <span class="setting-label">SFX VOLUME</span>
@@ -230,48 +230,48 @@
           </div>
 
           <div class="setting-row">
-            <span class="setting-label">SYNTH BEAT VOLUME</span>
+            <span class="setting-label">DHOL & MUSIC BEAT</span>
             <input type="range" id="setting-music-vol" class="setting-input" min="0" max="100" value="50">
           </div>
 
           <div class="setting-row">
-            <span class="setting-label">NEON BLOOM GLOW</span>
+            <span class="setting-label">WARM SUNLIGHT GLOW</span>
             <input type="checkbox" id="setting-bloom" class="setting-input" checked>
           </div>
         </div>
       </div>
 
-      <!-- CONTROLS & HOW TO PLAY MODAL -->
+      <!-- CONTROLS & HOW TO PLAY -->
       <div id="controls-modal" class="modal-overlay hidden">
         <div class="modal-panel" style="max-width: 520px">
           <button class="btn-close-modal">✕</button>
-          <h2 class="title-glitch" style="font-size: 26px">NEURAL PROTOCOLS</h2>
-          <div class="title-sub">HOW TO SURVIVE THE RUN</div>
+          <h2 class="title-glitch" style="font-size: 26px">CAMPAIGN PROTOCOLS</h2>
+          <div class="title-sub">HOW TO EVADE THE VOTERS & MEDIA</div>
 
           <div class="controls-grid">
             <div class="control-item">
               <div class="control-key">A / D or ◄ / ► / Swipe</div>
-              <div class="control-desc">Snappy 3-lane horizontal dash</div>
+              <div class="control-desc">Dodge between 3 European cobblestone lanes</div>
             </div>
             <div class="control-item">
               <div class="control-key">W / ▲ / Space / Swipe Up</div>
-              <div class="control-desc">Jump over laser beams & gaps</div>
+              <div class="control-desc">Jump over cafe bistro tables & barricades</div>
             </div>
             <div class="control-item">
               <div class="control-key">S / ▼ / Swipe Down</div>
-              <div class="control-desc">Slide under overhead gantries / drop</div>
+              <div class="control-desc">Slide under hanging clotheslines & banners</div>
             </div>
             <div class="control-item">
-              <div class="control-key">F / G / Gravity Pads</div>
-              <div class="control-desc">Flip gravity to run upside down on ceiling!</div>
+              <div class="control-key">F / G / Policy U-Turn</div>
+              <div class="control-desc">Flip gravity to run upside down on European rooftops!</div>
             </div>
             <div class="control-item">
               <div class="control-key">1, 2, 3 or Q / E</div>
-              <div class="control-desc">Shape-shift: Runner (wall/slide), Drone (glides over low lasers), Orb (rolls under gantries)</div>
+              <div class="control-desc">Morph: Netaji Sprint, Vespa (glides over tables), Roly-Poly (rolls under laundry)</div>
             </div>
             <div class="control-item">
-              <div class="control-key">Hold SHIFT / TIME Button</div>
-              <div class="control-desc">Neural Overclock: slow world time to 0.35x to weave through intense obstacles!</div>
+              <div class="control-key">Hold SHIFT / CHAI Button</div>
+              <div class="control-desc">Cutting Chai Turbo: slow world time to 0.35x to weave through crowd clusters!</div>
             </div>
           </div>
         </div>
@@ -279,7 +279,6 @@
     </div>
   </div>
 
-  <!-- Game Bootstrap -->
   <script type="module" src="./js/game.js"></script>
 </body>
 </html>

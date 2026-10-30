@@ -1,12 +1,11 @@
-// RUN AND RUN - UI & HUD Engine
-// Glassmorphism panels, futuristic Orbitron typography, hype combo banners, garage shop, missions, settings
+// RUN AND RUN: NETAJI IN EUROPE - UI & HUD Engine
+// Cream white card styling, Netaji's Wardrobe shop, Directive missions, crowd radar
 import { audio } from './audio.js';
 
 export class UIManager {
   constructor(game) {
     this.game = game;
 
-    // Cache DOM Elements
     this.hud = document.getElementById('hud');
     this.scoreEl = document.getElementById('hud-score');
     this.distanceEl = document.getElementById('hud-distance');
@@ -22,19 +21,16 @@ export class UIManager {
     this.zoneDescEl = document.getElementById('zone-desc');
     this.popupsContainer = document.getElementById('popups-container');
 
-    // Powerup indicators
     this.powerupsHud = document.getElementById('hud-powerups');
     this.shieldIndicator = document.getElementById('p-shield');
     this.magnetIndicator = document.getElementById('p-magnet');
     this.multIndicator = document.getElementById('p-multiplier');
     this.jetpackIndicator = document.getElementById('p-jetpack');
 
-    // Form buttons
     this.btnFormRunner = document.getElementById('btn-form-runner');
     this.btnFormDrone = document.getElementById('btn-form-drone');
     this.btnFormOrb = document.getElementById('btn-form-orb');
 
-    // Modals
     this.mainMenu = document.getElementById('main-menu');
     this.pauseMenu = document.getElementById('pause-menu');
     this.gameOverMenu = document.getElementById('game-over-menu');
@@ -43,7 +39,6 @@ export class UIManager {
     this.settingsMenu = document.getElementById('settings-menu');
     this.controlsModal = document.getElementById('controls-modal');
 
-    // Game over stats
     this.goScoreEl = document.getElementById('go-score');
     this.goBestEl = document.getElementById('go-best');
     this.goDistEl = document.getElementById('go-distance');
@@ -51,20 +46,15 @@ export class UIManager {
     this.goNearMissEl = document.getElementById('go-nearmiss');
     this.goModeTag = document.getElementById('go-mode-tag');
 
-    // Menu stats
     this.menuBestEl = document.getElementById('menu-best');
     this.menuCoinsEl = document.getElementById('menu-coins');
     this.shopCoinsEl = document.getElementById('shop-coins');
 
-    // State
     this.lastForm = 'RUNNER';
-    this.comboTimer = null;
-
     this.bindEvents();
   }
 
   bindEvents() {
-    // Menu buttons
     document.getElementById('btn-play').addEventListener('click', () => {
       audio.playUIClick();
       this.game.startRun(false);
@@ -95,7 +85,6 @@ export class UIManager {
       this.controlsModal.classList.remove('hidden');
     });
 
-    // Pause Menu
     document.getElementById('btn-pause').addEventListener('click', () => {
       audio.playUIClick();
       this.game.togglePause();
@@ -118,7 +107,6 @@ export class UIManager {
       this.showMainMenu();
     });
 
-    // Game Over Menu
     document.getElementById('btn-restart').addEventListener('click', () => {
       audio.playUIClick();
       this.game.startRun(this.game.isDailyMode);
@@ -135,7 +123,6 @@ export class UIManager {
       this.copyShareScore();
     });
 
-    // Close buttons for modals
     document.querySelectorAll('.btn-close-modal').forEach(btn => {
       btn.addEventListener('click', (e) => {
         audio.playUIClick();
@@ -144,7 +131,6 @@ export class UIManager {
       });
     });
 
-    // Form HUD Switchers
     this.btnFormRunner.addEventListener('click', () => {
       this.game.player.setForm('RUNNER');
     });
@@ -155,7 +141,6 @@ export class UIManager {
       this.game.player.setForm('ORB');
     });
 
-    // Mobile Action buttons
     const btnJump = document.getElementById('btn-mobile-jump');
     if (btnJump) {
       btnJump.addEventListener('touchstart', (e) => {
@@ -184,7 +169,6 @@ export class UIManager {
       });
     }
 
-    // Audio Settings Sliders
     const sfxSlider = document.getElementById('setting-sfx-vol');
     if (sfxSlider) {
       sfxSlider.value = audio.sfxVolume * 100;
@@ -201,7 +185,6 @@ export class UIManager {
       });
     }
 
-    // Bloom Toggle
     const bloomToggle = document.getElementById('setting-bloom');
     if (bloomToggle) {
       bloomToggle.checked = this.game.useBloom;
@@ -240,55 +223,51 @@ export class UIManager {
     this.goDistEl.textContent = Math.floor(stats.distance) + ' m';
     this.goCoinsEl.textContent = stats.coinsRun.toLocaleString();
     this.goNearMissEl.textContent = stats.nearMisses;
-    this.goModeTag.textContent = stats.isDaily ? 'DAILY CHALLENGE' : 'STANDARD RUN';
+    this.goModeTag.textContent = 'SWARMED BY THE EXCITED VOTERS & MEDIA!';
   }
 
-  updateHUD(stats, player, powerups, hunterDist) {
-    // Score & Distance
+  updateHUD(stats, player, powerups, crowdDist) {
     this.scoreEl.textContent = Math.floor(stats.score).toLocaleString();
     this.distanceEl.textContent = Math.floor(stats.distance) + 'm';
     this.coinsEl.textContent = stats.coinsRun.toLocaleString();
 
-    // Combo & Tiers
     const combo = stats.combo;
     if (combo > 1) {
       this.comboEl.classList.remove('hidden');
       document.getElementById('hud-combo-val').textContent = 'x' + combo;
 
       let tier = 'SWEET';
-      if (combo >= 5) tier = 'MAX FLOWSTATE 💎';
-      else if (combo >= 4) tier = 'GOATED 🔥';
-      else if (combo >= 3) tier = 'COOKING 🚀';
-      else if (combo >= 2) tier = 'SAVAGE ⚡';
+      if (combo >= 5) tier = 'MAX HAWA 🔥';
+      else if (combo >= 4) tier = 'FULL JOSH ⚡';
+      else if (combo >= 3) tier = 'SPEED NETA 🚀';
+      else if (combo >= 2) tier = 'CLEAN SPRINT';
       this.comboTierEl.textContent = tier;
     } else {
       this.comboEl.classList.add('hidden');
     }
 
-    // Energy Bar
     const energyPct = Math.max(0, Math.min(100, player.energy));
     this.energyBarEl.style.width = energyPct + '%';
     if (energyPct >= 99) {
       this.energyBarEl.classList.add('pulse-ready');
-      this.energyHintEl.textContent = 'READY! [HOLD SHIFT]';
+      this.energyHintEl.textContent = 'CHAI POWER READY! [HOLD SHIFT]';
     } else if (player.isOverclock) {
       this.energyBarEl.classList.add('pulse-active');
-      this.energyHintEl.textContent = 'OVERCLOCK ACTIVE!';
+      this.energyHintEl.textContent = 'CHAI TURBO ACTIVE!';
     } else {
       this.energyBarEl.classList.remove('pulse-ready', 'pulse-active');
-      this.energyHintEl.textContent = 'NEURAL OVERCLOCK';
+      this.energyHintEl.textContent = 'CHAI ENERGY [HOLD SHIFT]';
     }
 
-    // Threat Radar
-    const threatM = Math.floor(hunterDist);
-    this.threatDistEl.textContent = threatM + 'm';
-    if (threatM < 18) {
+    // Public Crowd Distance
+    const distM = Math.floor(crowdDist);
+    this.threatDistEl.textContent = distM + 'm';
+    if (distM < 18) {
       this.threatEl.classList.add('threat-danger');
     } else {
       this.threatEl.classList.remove('threat-danger');
     }
 
-    // Form Switcher Highlight
     if (player.form !== this.lastForm) {
       this.lastForm = player.form;
       this.btnFormRunner.classList.toggle('active', player.form === 'RUNNER');
@@ -296,7 +275,6 @@ export class UIManager {
       this.btnFormOrb.classList.toggle('active', player.form === 'ORB');
     }
 
-    // Powerup Indicators
     const eff = powerups.activeEffects;
     this.shieldIndicator.classList.toggle('active', eff.shield);
     this.magnetIndicator.classList.toggle('active', eff.magnetTimer > 0);
@@ -327,7 +305,6 @@ export class UIManager {
     }, 1100);
   }
 
-  // SHOP (CYBER GARAGE)
   openShop() {
     this.shopMenu.classList.remove('hidden');
     this.shopCoinsEl.textContent = this.game.saveData.coins.toLocaleString();
@@ -339,11 +316,11 @@ export class UIManager {
     container.innerHTML = '';
 
     const skins = [
-      { id: 'striker', name: 'NEON STRIKER', price: 0, desc: 'Original Cyber Ninja Suit' },
-      { id: 'samurai', name: 'CYBER SAMURAI', price: 150, desc: 'Crimson Plasma Blade Armor' },
-      { id: 'vapor', name: 'SYNTH VAPOR', price: 300, desc: 'Hot Pink & Cyan Outrun Glider' },
-      { id: 'quantum', name: 'QUANTUM APEX', price: 600, desc: 'Zero-G Emerald Singularity' },
-      { id: 'valkyrie', name: 'MECHA VALKYRIE', price: 1000, desc: 'Pure Solar Gold Plating' }
+      { id: 'classic', name: 'SAFFRON KHADI', price: 0, desc: 'Classic Modi Vest & Tiranga Gamcha' },
+      { id: 'royal',   name: 'ROYAL BLUE', price: 150, desc: 'Silk Waistcoat with Golden Pocket Square' },
+      { id: 'emerald', name: 'GREEN KHADI', price: 300, desc: 'Eco-Friendly Grassroots Cotton Vest' },
+      { id: 'velvet',  name: 'MAROON VELVET', price: 600, desc: 'VIP State Banquet Gala Coat' },
+      { id: 'gold',    name: 'MAHARAJA GOLD', price: 1000, desc: 'Pure Zari Gold Royal Attire' }
     ];
 
     skins.forEach(skin => {
@@ -355,9 +332,9 @@ export class UIManager {
       card.innerHTML = `
         <div class="shop-card-title">${skin.name}</div>
         <div class="shop-card-desc">${skin.desc}</div>
-        <div class="shop-card-price">${isOwned ? 'OWNED' : `${skin.price} BITS`}</div>
+        <div class="shop-card-price">${isOwned ? 'OWNED' : `${skin.price} LADDOOS`}</div>
         <button class="shop-btn ${isEquipped ? 'btn-equipped' : isOwned ? 'btn-equip' : 'btn-buy'}">
-          ${isEquipped ? 'EQUIPPED' : isOwned ? 'EQUIP' : 'UNLOCK'}
+          ${isEquipped ? 'EQUIPPED' : isOwned ? 'WEAR' : 'UNLOCK'}
         </button>
       `;
 
@@ -372,7 +349,7 @@ export class UIManager {
           this.shopCoinsEl.textContent = this.game.saveData.coins.toLocaleString();
           this.renderShopItems();
         } else {
-          this.spawnPopup('NEED MORE COINS!', 'warn');
+          this.spawnPopup('NEED MORE LADDOOS!', 'warn');
         }
       });
 
@@ -380,7 +357,6 @@ export class UIManager {
     });
   }
 
-  // MISSIONS MODAL
   openMissions() {
     this.missionsMenu.classList.remove('hidden');
     this.renderMissionsList();
@@ -399,7 +375,7 @@ export class UIManager {
       card.innerHTML = `
         <div class="mission-info">
           <div class="mission-title">${m.title}</div>
-          <div class="mission-reward">+${m.reward} BITS</div>
+          <div class="mission-reward">+${m.reward} LADDOOS</div>
         </div>
         <div class="mission-bar-bg">
           <div class="mission-bar-fill" style="width: ${pct}%"></div>
@@ -426,9 +402,9 @@ export class UIManager {
   }
 
   copyShareScore() {
-    const text = `⚡ I scored ${this.goScoreEl.textContent} in RUN AND RUN (3D Cyberpunk Endless Runner)! Can you beat me? 🚀`;
+    const text = `🏃‍♂️ I ran ${this.goDistEl.textContent} and scored ${this.goScoreEl.textContent} in RUN NETAJI RUN (European Tour 3D)! Can you evade the crowd? ⚡`;
     navigator.clipboard.writeText(text).then(() => {
-      this.spawnPopup('SCORE COPIED TO CLIPBOARD! 🔥', 'hype');
+      this.spawnPopup('SCORE COPIED! SHARE WITH FRIENDS 🔥', 'hype');
     }).catch(() => {
       this.spawnPopup('COPIED!', 'hype');
     });

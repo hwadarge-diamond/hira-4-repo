@@ -1,5 +1,5 @@
-// RUN AND RUN - Player Controller & 3D Character Models
-// 3 Switchable Forms: Runner (Cyber Ninja), Drone (Aero-Glider), Orb (Quantum Gyro)
+// RUN AND RUN: NETAJI IN EUROPE - Cartoon Indian Politician Player Character
+// Netaji in White Kurta-Pyjama, Gandhi Topi, Nehru Waistcoat, Angavastram Scarf
 import * as THREE from 'three';
 import { audio } from './audio.js';
 
@@ -7,11 +7,10 @@ export class Player {
   constructor(scene) {
     this.scene = scene;
 
-    // Master container
     this.mesh = new THREE.Group();
     this.scene.add(this.mesh);
 
-    // Lanes: -1 (Left, -2.8), 0 (Center, 0), 1 (Right, 2.8)
+    // 3 European cobblestone lanes: -2.8, 0, 2.8
     this.laneWidth = 2.8;
     this.targetLane = 0;
     this.currentX = 0;
@@ -22,19 +21,18 @@ export class Player {
     this.y = 0;
     this.velocityY = 0;
     this.gravity = -34;
-    this.jumpForce = 13.5;
+    this.jumpForce = 13.8;
     this.isGrounded = true;
 
-    // Gravity Inversion (-1 for ceiling, 1 for floor)
-    this.gravityDirection = 1; // 1 = normal (floor), -1 = inverted (ceiling)
-    this.flipProgress = 0; // 0 to 1
+    // Gravity Inversion (Rooftop running / gravity flip)
+    this.gravityDirection = 1;
     this.targetRotationZ = 0;
 
-    // Forms: 'RUNNER', 'DRONE', 'ORB'
+    // Forms: 'RUNNER' (Netaji Sprint), 'DRONE' (Vintage Vespa), 'ORB' (Roly-Poly Netaji)
     this.form = 'RUNNER';
     this.formGroups = {};
 
-    // Actions & States
+    // State & Timers
     this.isSliding = false;
     this.slideTimer = 0;
     this.slideDuration = 0.75;
@@ -44,198 +42,252 @@ export class Player {
 
     // Zone physics modifiers
     this.gravityMultiplier = 1.0;
-    this.magnetZoneActive = false;
 
-    // Overclock (Bullet Time)
+    // Chai Energy / Stamina Overclock
     this.isOverclock = false;
-    this.energy = 50; // 0 to 100
+    this.energy = 60;
     this.maxEnergy = 100;
-    this.ghostTrailTimer = 0;
-    this.ghostMeshes = [];
 
-    // Customization
-    this.currentSkin = 'striker';
-    this.currentTrail = 'cyan';
+    // Customization & Waistcoat / Topi colors
+    this.currentSkin = 'classic';
+    this.currentTrail = 'golden';
 
-    // Ghost Replay Data Recording
+    // Ghost Replay Data
     this.history = [];
     this.recordTimer = 0;
 
-    // Build the 3D models
-    this.buildModels();
+    // Build the 3D Netaji Models
+    this.buildNetajiModels();
     this.setForm('RUNNER', false);
     this.buildTrailSystem();
 
-    // Collision Bounding Box
+    // Bounding Box
     this.box = new THREE.Box3();
-    this.size = new THREE.Vector3(1.2, 1.8, 1.2);
   }
 
-  buildModels() {
-    // 1. RUNNER MODEL (Cyber Ninja)
+  buildNetajiModels() {
+    // Shared Cartoon Materials
+    this.matSkin = new THREE.MeshStandardMaterial({
+      color: 0xdfa067,
+      roughness: 0.6,
+      metalness: 0.05
+    });
+
+    this.matKurta = new THREE.MeshStandardMaterial({
+      color: 0xfaf9f5, // Pristine Khadi White
+      roughness: 0.8,
+      metalness: 0.02
+    });
+
+    this.matTopi = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.75
+    });
+
+    this.matVest = new THREE.MeshStandardMaterial({
+      color: 0xe65100, // Saffron Orange Modi / Nehru Jacket
+      roughness: 0.65,
+      metalness: 0.1
+    });
+
+    this.matScarf = new THREE.MeshStandardMaterial({
+      color: 0x2e7d32, // Emerald Green Gamcha / Angavastram
+      roughness: 0.7
+    });
+
+    this.matHair = new THREE.MeshStandardMaterial({
+      color: 0x332211,
+      roughness: 0.9
+    });
+
+    this.matShoes = new THREE.MeshStandardMaterial({
+      color: 0x4e2710,
+      roughness: 0.5
+    });
+
+    // 1. RUNNER FORM (Netaji On Foot Sprint)
     const runnerGroup = new THREE.Group();
 
-    // Materials
-    this.matArmor = new THREE.MeshStandardMaterial({
-      color: 0x12172b,
-      metalness: 0.85,
-      roughness: 0.25
-    });
-    this.matAccent = new THREE.MeshStandardMaterial({
-      color: 0x00f3ff,
-      emissive: 0x00f3ff,
-      emissiveIntensity: 0.8,
-      roughness: 0.1
-    });
-    this.matVisor = new THREE.MeshStandardMaterial({
-      color: 0xff0055,
-      emissive: 0xff0055,
-      emissiveIntensity: 1.5,
-      roughness: 0.0
-    });
-    this.matJoints = new THREE.MeshStandardMaterial({
-      color: 0x080a14,
-      metalness: 0.9,
-      roughness: 0.4
-    });
-
-    // Torso / Chest Reactor
-    const torsoGeom = new THREE.BoxGeometry(0.7, 0.8, 0.45);
-    const torso = new THREE.Mesh(torsoGeom, this.matArmor);
+    // Belly & Torso (Slightly chubby cartoon politician silhouette)
+    const torsoGeom = new THREE.CylinderGeometry(0.42, 0.48, 0.85, 14);
+    const torso = new THREE.Mesh(torsoGeom, this.matKurta);
     torso.position.y = 1.05;
     runnerGroup.add(torso);
 
-    // Glowing Chest Reactor Core
-    const coreGeom = new THREE.CylinderGeometry(0.12, 0.12, 0.08, 12);
-    coreGeom.rotateX(Math.PI / 2);
-    const core = new THREE.Mesh(coreGeom, this.matAccent);
-    core.position.set(0, 1.1, 0.23);
-    runnerGroup.add(core);
+    // Nehru Jacket / Vest overlay
+    const vestGeom = new THREE.CylinderGeometry(0.45, 0.51, 0.65, 14, 1, false, 0, Math.PI * 1.85);
+    vestGeom.rotateY(-Math.PI * 0.92);
+    this.vestMesh = new THREE.Mesh(vestGeom, this.matVest);
+    this.vestMesh.position.y = 1.1;
+    runnerGroup.add(this.vestMesh);
 
-    // Head & Cyber Helmet
+    // Flowing Kurta Skirt / Tunic base
+    const skirtGeom = new THREE.ConeGeometry(0.56, 0.5, 12, 1, true);
+    const skirt = new THREE.Mesh(skirtGeom, this.matKurta);
+    skirt.position.y = 0.68;
+    runnerGroup.add(skirt);
+    this.kurtaSkirt = skirt;
+
+    // Angavastram / Scarf draped over shoulder
+    const scarfGeom = new THREE.BoxGeometry(0.18, 0.9, 0.08);
+    const scarf = new THREE.Mesh(scarfGeom, this.matScarf);
+    scarf.position.set(-0.35, 1.05, 0.12);
+    scarf.rotation.z = -0.15;
+    runnerGroup.add(scarf);
+    this.scarfMesh = scarf;
+
+    // Head Hierarchy
     const headGroup = new THREE.Group();
-    headGroup.position.set(0, 1.65, 0);
+    headGroup.position.set(0, 1.72, 0);
 
-    const helmetGeom = new THREE.BoxGeometry(0.48, 0.46, 0.48);
-    const helmet = new THREE.Mesh(helmetGeom, this.matArmor);
-    headGroup.add(helmet);
+    // Round Cartoon Head
+    const headGeom = new THREE.SphereGeometry(0.38, 20, 20);
+    const head = new THREE.Mesh(headGeom, this.matSkin);
+    headGroup.add(head);
 
-    // Glowing Cyber Visor
-    const visorGeom = new THREE.BoxGeometry(0.44, 0.14, 0.2);
-    const visor = new THREE.Mesh(visorGeom, this.matVisor);
-    visor.position.set(0, 0.02, 0.22);
-    headGroup.add(visor);
+    // Classic Politician Mustache
+    const stacheGeom = new THREE.CylinderGeometry(0.04, 0.08, 0.34, 8);
+    stacheGeom.rotateZ(Math.PI / 2);
+    const stache = new THREE.Mesh(stacheGeom, this.matHair);
+    stache.position.set(0, -0.06, 0.35);
+    headGroup.add(stache);
+
+    // Cartoon Eyes
+    const eyeGeom = new THREE.SphereGeometry(0.07, 10, 10);
+    const eyeWhiteMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const pupilMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+
+    [-0.14, 0.14].forEach(x => {
+      const eyeWhite = new THREE.Mesh(eyeGeom, eyeWhiteMat);
+      eyeWhite.position.set(x, 0.08, 0.32);
+      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), pupilMat);
+      pupil.position.set(x, 0.08, 0.37);
+      headGroup.add(eyeWhite, pupil);
+    });
+
+    // Gandhi Topi (Traditional Politician Boat Cap)
+    const topiGroup = new THREE.Group();
+    topiGroup.position.set(0, 0.32, 0);
+    const topiGeom = new THREE.ConeGeometry(0.36, 0.28, 4);
+    topiGeom.rotateY(Math.PI / 4);
+    topiGeom.scale(1.1, 0.8, 1.6);
+    const topi = new THREE.Mesh(topiGeom, this.matTopi);
+    topiGroup.add(topi);
+    headGroup.add(topiGroup);
+    this.topiGroup = topiGroup;
+
     runnerGroup.add(headGroup);
     this.runnerHead = headGroup;
 
-    // Jet Thruster Fins on Back
-    const finGeom = new THREE.BoxGeometry(0.08, 0.6, 0.2);
-    const leftFin = new THREE.Mesh(finGeom, this.matAccent);
-    leftFin.position.set(-0.25, 1.25, -0.26);
-    leftFin.rotation.z = 0.2;
-    const rightFin = new THREE.Mesh(finGeom, this.matAccent);
-    rightFin.position.set(0.25, 1.25, -0.26);
-    rightFin.rotation.z = -0.2;
-    runnerGroup.add(leftFin, rightFin);
-
-    // Left Arm Hierarchy
+    // Left Arm (Swinging / Waving to the public)
     this.leftArm = new THREE.Group();
-    this.leftArm.position.set(-0.48, 1.35, 0);
-    const armGeom = new THREE.BoxGeometry(0.22, 0.65, 0.22);
-    const leftArmMesh = new THREE.Mesh(armGeom, this.matArmor);
+    this.leftArm.position.set(-0.52, 1.35, 0);
+    const armGeom = new THREE.CylinderGeometry(0.11, 0.1, 0.65, 8);
+    const leftArmMesh = new THREE.Mesh(armGeom, this.matKurta);
     leftArmMesh.position.y = -0.3;
-    this.leftArm.add(leftArmMesh);
+    // Hand
+    const handGeom = new THREE.SphereGeometry(0.12, 8, 8);
+    const leftHand = new THREE.Mesh(handGeom, this.matSkin);
+    leftHand.position.y = -0.62;
+    this.leftArm.add(leftArmMesh, leftHand);
     runnerGroup.add(this.leftArm);
 
-    // Right Arm Hierarchy
+    // Right Arm (Namaste greeting / campaign wave)
     this.rightArm = new THREE.Group();
-    this.rightArm.position.set(0.48, 1.35, 0);
-    const rightArmMesh = new THREE.Mesh(armGeom, this.matArmor);
+    this.rightArm.position.set(0.52, 1.35, 0);
+    const rightArmMesh = new THREE.Mesh(armGeom, this.matKurta);
     rightArmMesh.position.y = -0.3;
-    this.rightArm.add(rightArmMesh);
+    const rightHand = new THREE.Mesh(handGeom, this.matSkin);
+    rightHand.position.y = -0.62;
+    this.rightArm.add(rightArmMesh, rightHand);
     runnerGroup.add(this.rightArm);
 
-    // Left Leg Hierarchy
+    // Legs with white Pyjama & traditional Mojari shoes
+    const legGeom = new THREE.CylinderGeometry(0.14, 0.12, 0.75, 8);
+    const shoeGeom = new THREE.BoxGeometry(0.2, 0.14, 0.34);
+
     this.leftLeg = new THREE.Group();
-    this.leftLeg.position.set(-0.22, 0.7, 0);
-    const legGeom = new THREE.BoxGeometry(0.26, 0.75, 0.26);
-    const leftLegMesh = new THREE.Mesh(legGeom, this.matArmor);
+    this.leftLeg.position.set(-0.24, 0.68, 0);
+    const leftLegMesh = new THREE.Mesh(legGeom, this.matKurta);
     leftLegMesh.position.y = -0.35;
-    this.leftLeg.add(leftLegMesh);
+    const leftShoe = new THREE.Mesh(shoeGeom, this.matShoes);
+    leftShoe.position.set(0, -0.7, 0.06);
+    this.leftLeg.add(leftLegMesh, leftShoe);
     runnerGroup.add(this.leftLeg);
 
-    // Right Leg Hierarchy
     this.rightLeg = new THREE.Group();
-    this.rightLeg.position.set(0.22, 0.7, 0);
-    const rightLegMesh = new THREE.Mesh(legGeom, this.matArmor);
+    this.rightLeg.position.set(0.24, 0.68, 0);
+    const rightLegMesh = new THREE.Mesh(legGeom, this.matKurta);
     rightLegMesh.position.y = -0.35;
-    this.rightLeg.add(rightLegMesh);
+    const rightShoe = new THREE.Mesh(shoeGeom, this.matShoes);
+    rightShoe.position.set(0, -0.7, 0.06);
+    this.rightLeg.add(rightLegMesh, rightShoe);
     runnerGroup.add(this.rightLeg);
 
     this.formGroups['RUNNER'] = runnerGroup;
     this.mesh.add(runnerGroup);
 
-    // 2. DRONE MODEL (Aero-Glider Hovercraft)
+    // 2. DRONE FORM (Vintage European Vespa Scooter Ride)
     const droneGroup = new THREE.Group();
-    droneGroup.position.y = 0.9;
+    droneGroup.position.y = 0.55;
 
-    // Sleek Central Fuselage
-    const fuselageGeom = new THREE.ConeGeometry(0.45, 1.5, 5);
-    fuselageGeom.rotateX(Math.PI / 2);
-    const fuselage = new THREE.Mesh(fuselageGeom, this.matArmor);
-    droneGroup.add(fuselage);
+    // Vespa Body (Pastel European Mint Green)
+    const vespaMat = new THREE.MeshStandardMaterial({ color: 0x4db6ac, roughness: 0.3 });
+    const chromeMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.9, roughness: 0.1 });
+    const seatMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.7 });
 
-    // Swept delta wings
-    const wingGeom = new THREE.BoxGeometry(2.1, 0.08, 0.55);
-    const wings = new THREE.Mesh(wingGeom, this.matArmor);
-    wings.position.set(0, 0.05, 0.1);
-    droneGroup.add(wings);
+    const vespaChassis = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 1.8), vespaMat);
+    vespaChassis.position.y = 0.45;
+    droneGroup.add(vespaChassis);
 
-    // Glowing Wingtip Beacons
-    const beaconGeom = new THREE.BoxGeometry(0.12, 0.12, 0.4);
-    const leftBeacon = new THREE.Mesh(beaconGeom, this.matAccent);
-    leftBeacon.position.set(-1.05, 0.08, 0.1);
-    const rightBeacon = new THREE.Mesh(beaconGeom, this.matAccent);
-    rightBeacon.position.set(1.05, 0.08, 0.1);
-    droneGroup.add(leftBeacon, rightBeacon);
+    // Rounded cowl rear
+    const rearCowl = new THREE.Mesh(new THREE.SphereGeometry(0.48, 12, 12), vespaMat);
+    rearCowl.scale.set(1.1, 0.8, 1.4);
+    rearCowl.position.set(0, 0.55, -0.4);
+    droneGroup.add(rearCowl);
 
-    // Dual Ion Thruster Nozzles on Rear
-    const thrusterGeom = new THREE.CylinderGeometry(0.16, 0.22, 0.45, 12);
-    thrusterGeom.rotateX(Math.PI / 2);
-    const leftThruster = new THREE.Mesh(thrusterGeom, this.matVisor);
-    leftThruster.position.set(-0.35, 0.0, -0.7);
-    const rightThruster = new THREE.Mesh(thrusterGeom, this.matVisor);
-    rightThruster.position.set(0.35, 0.0, -0.7);
-    droneGroup.add(leftThruster, rightThruster);
+    // Leather Seat
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.18, 0.9), seatMat);
+    seat.position.set(0, 0.82, -0.2);
+    droneGroup.add(seat);
+
+    // Cute Round Headlight & Handlebars
+    const handleBar = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.1, 8), chromeMat);
+    handleBar.rotateZ(Math.PI / 2);
+    handleBar.position.set(0, 1.05, 0.65);
+    const headlight = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.12, 12), chromeMat);
+    headlight.rotateX(Math.PI / 2);
+    headlight.position.set(0, 1.05, 0.75);
+    droneGroup.add(handleBar, headlight);
+
+    // Mini Netaji Driving Vespa
+    const driverHead = headGroup.clone();
+    driverHead.position.set(0, 1.5, -0.15);
+    driverHead.scale.set(0.9, 0.9, 0.9);
+    droneGroup.add(driverHead);
 
     this.droneGroup = droneGroup;
     this.formGroups['DRONE'] = droneGroup;
     this.mesh.add(droneGroup);
 
-    // 3. ORB MODEL (Quantum Gyro-Sphere)
+    // 3. ORB FORM (Roly-Poly Netaji Balloon Sphere)
     const orbGroup = new THREE.Group();
     orbGroup.position.y = 0.65;
 
-    // Glowing Quantum Singularity Core
-    const coreSphereGeom = new THREE.SphereGeometry(0.38, 24, 24);
-    this.matOrbCore = new THREE.MeshStandardMaterial({
-      color: 0xff00ff,
-      emissive: 0xff00ff,
-      emissiveIntensity: 1.8,
-      roughness: 0.1
-    });
-    const orbCore = new THREE.Mesh(coreSphereGeom, this.matOrbCore);
-    orbGroup.add(orbCore);
+    // Round White Kurta Ball
+    const sphereGeom = new THREE.SphereGeometry(0.68, 24, 24);
+    const ballMesh = new THREE.Mesh(sphereGeom, this.matKurta);
+    orbGroup.add(ballMesh);
 
-    // Outer Gyro Ring 1
-    const ring1Geom = new THREE.TorusGeometry(0.55, 0.05, 8, 28);
-    this.ring1 = new THREE.Mesh(ring1Geom, this.matAccent);
-    orbGroup.add(this.ring1);
+    // Spinning Topi on top of ball
+    const orbTopi = topiGroup.clone();
+    orbTopi.position.set(0, 0.72, 0);
+    orbGroup.add(orbTopi);
 
-    // Outer Gyro Ring 2
-    const ring2Geom = new THREE.TorusGeometry(0.68, 0.05, 8, 28);
-    this.ring2 = new THREE.Mesh(ring2Geom, this.matArmor);
-    orbGroup.add(this.ring2);
+    // Waistcoat belt band
+    const vestBand = new THREE.Mesh(new THREE.TorusGeometry(0.69, 0.08, 8, 24), this.matVest);
+    vestBand.rotateX(Math.PI / 2);
+    orbGroup.add(vestBand);
 
     this.orbGroup = orbGroup;
     this.formGroups['ORB'] = orbGroup;
@@ -247,13 +299,12 @@ export class Player {
     this.trailGroup = new THREE.Group();
     this.scene.add(this.trailGroup);
 
-    const pGeom = new THREE.PlaneGeometry(0.3, 0.3);
-    for (let i = 0; i < 28; i++) {
+    const pGeom = new THREE.PlaneGeometry(0.35, 0.35);
+    for (let i = 0; i < 24; i++) {
       const pMat = new THREE.MeshBasicMaterial({
-        color: 0x00f3ff,
+        color: 0xffb74d, // Warm golden marigold petals / campaign dust
         transparent: true,
         opacity: 0,
-        blending: THREE.AdditiveBlending,
         depthWrite: false,
         side: THREE.DoubleSide
       });
@@ -263,7 +314,7 @@ export class Player {
       this.trailParticles.push({
         mesh,
         life: 0,
-        maxLife: 0.4
+        maxLife: 0.38
       });
     }
   }
@@ -278,7 +329,7 @@ export class Player {
 
     if (playSound) {
       audio.playFormShift(newForm);
-      this.spawnShiftPulse();
+      this.mesh.scale.set(1.25, 1.25, 1.25);
     }
   }
 
@@ -289,12 +340,6 @@ export class Player {
     this.setForm(forms[nextIdx]);
   }
 
-  spawnShiftPulse() {
-    // Quick scale pop on transformation
-    this.mesh.scale.set(1.3, 1.3, 1.3);
-  }
-
-  // LANE NAVIGATION
   moveLeft() {
     if (this.isDead) return;
     if (this.targetLane > -1) {
@@ -314,10 +359,9 @@ export class Player {
   jump() {
     if (this.isDead) return;
     if (this.isGrounded) {
-      // Invert jump velocity direction if on ceiling
       this.velocityY = this.jumpForce * this.gravityDirection;
       this.isGrounded = false;
-      this.isSliding = false; // Cancel slide with jump
+      this.isSliding = false;
       audio.playJump();
     }
   }
@@ -329,26 +373,19 @@ export class Player {
       this.slideTimer = this.slideDuration;
       audio.playSlide();
     } else if (!this.isGrounded) {
-      // Quick drop (slam down / up to surface)
       this.velocityY = -22 * this.gravityDirection;
     }
   }
 
-  // GRAVITY FLIP FEATURE
   flipGravity() {
     if (this.isDead) return;
-    this.gravityDirection *= -1; // Toggle 1 and -1
+    this.gravityDirection *= -1;
     this.isGrounded = false;
     audio.playGravityFlip();
-
-    // Target rotation: 0 radians for normal, PI for ceiling
     this.targetRotationZ = this.gravityDirection === 1 ? 0 : Math.PI;
-
-    // Small impulse push towards new target surface
     this.velocityY = 6 * this.gravityDirection;
   }
 
-  // NEURAL OVERCLOCK (BULLET-TIME)
   toggleOverclock(state) {
     if (this.isDead) {
       this.isOverclock = false;
@@ -368,54 +405,45 @@ export class Player {
     this.energy = Math.min(this.maxEnergy, this.energy + amount);
   }
 
-  // SKIN & THEME CUSTOMIZATION
+  // POLITICIAN WAISTCOAT & SCARF STYLES
   applySkin(skinId) {
     this.currentSkin = skinId;
-    const colors = {
-      striker: { armor: 0x12172b, accent: 0x00f3ff, visor: 0xff0055 },
-      samurai: { armor: 0x220510, accent: 0xff0044, visor: 0xffe600 },
-      vapor: { armor: 0x0e1c2e, accent: 0xff00aa, visor: 0x00ffff },
-      quantum: { armor: 0x052014, accent: 0x00ff88, visor: 0x00f3ff },
-      valkyrie: { armor: 0x201a08, accent: 0xffd700, visor: 0xffffff }
+    const skins = {
+      classic: { vest: 0xe65100, scarf: 0x2e7d32, topi: 0xffffff }, // Saffron Modi Vest + Tiranga
+      royal:   { vest: 0x1565c0, scarf: 0xf57c00, topi: 0xfafafa }, // Royal Blue Silk
+      emerald: { vest: 0x2e7d32, scarf: 0xffd54f, topi: 0xffffff }, // Green Khadi
+      velvet:  { vest: 0x880e4f, scarf: 0xffab00, topi: 0xfff9c4 }, // Maroon Velvet
+      gold:    { vest: 0xffb300, scarf: 0xd84315, topi: 0xffe082 }  // Maharaja Gold
     };
-    const c = colors[skinId] || colors.striker;
-
-    this.matArmor.color.setHex(c.armor);
-    this.matAccent.color.setHex(c.accent);
-    this.matAccent.emissive.setHex(c.accent);
-    this.matVisor.color.setHex(c.visor);
-    this.matVisor.emissive.setHex(c.visor);
-    this.matOrbCore.color.setHex(c.accent);
-    this.matOrbCore.emissive.setHex(c.accent);
+    const s = skins[skinId] || skins.classic;
+    this.matVest.color.setHex(s.vest);
+    this.matScarf.color.setHex(s.scarf);
+    this.matTopi.color.setHex(s.topi);
   }
 
   applyTrail(trailId) {
     this.currentTrail = trailId;
-    const trailColors = {
-      cyan: 0x00f3ff,
-      magenta: 0xff00aa,
-      gold: 0xffd700,
-      emerald: 0x00ff66,
-      rainbow: 0xff0055
+    const colors = {
+      golden: 0xffb74d,
+      marigold: 0xff7043,
+      tricolor: 0x43a047,
+      rose: 0xf06292
     };
-    const col = trailColors[trailId] || 0x00f3ff;
-    this.trailParticles.forEach(p => {
-      p.mesh.material.color.setHex(col);
-    });
+    const c = colors[trailId] || 0xffb74d;
+    this.trailParticles.forEach(p => p.mesh.material.color.setHex(c));
   }
 
   update(delta, gameSpeed) {
     if (this.isDead) return;
 
-    // Decay scale bounce from morphing
     this.mesh.scale.lerp(new THREE.Vector3(1, 1, 1), delta * 8);
 
-    // 1. Horizontal Lane Lerp
+    // Horizontal lane lerp
     const targetX = this.targetLane * this.laneWidth;
     this.currentX = THREE.MathUtils.lerp(this.currentX, targetX, delta * 15);
     this.mesh.position.x = this.currentX;
 
-    // Lane tilt banking
+    // Lean into turns
     const xDiff = targetX - this.currentX;
     this.mesh.rotation.z = THREE.MathUtils.lerp(
       this.mesh.rotation.z,
@@ -423,14 +451,12 @@ export class Player {
       delta * 12
     );
 
-    // 2. Vertical Physics & Gravity
+    // Vertical physics
     const effectiveGravity = this.gravity * this.gravityMultiplier * this.gravityDirection;
     this.velocityY += effectiveGravity * delta;
     this.y += this.velocityY * delta;
 
-    // Floor and Ceiling Collision Bounds
     if (this.gravityDirection === 1) {
-      // Normal gravity: bounds at floorY
       if (this.y <= this.floorY) {
         this.y = this.floorY;
         this.velocityY = 0;
@@ -439,7 +465,6 @@ export class Player {
         this.isGrounded = false;
       }
     } else {
-      // Inverted gravity: bounds at ceilingY
       if (this.y >= this.ceilingY) {
         this.y = this.ceilingY;
         this.velocityY = 0;
@@ -450,45 +475,42 @@ export class Player {
     }
     this.mesh.position.y = this.y;
 
-    // 3. Sliding Timer & Mechanics
+    // Slide timer
     if (this.isSliding) {
       this.slideTimer -= delta;
-      if (this.slideTimer <= 0) {
-        this.isSliding = false;
-      }
+      if (this.slideTimer <= 0) this.isSliding = false;
     }
 
-    // 4. Overclock (Bullet Time) Energy Drain
+    // Chai Energy Overclock Drain
     if (this.isOverclock) {
-      this.energy -= delta * 22; // Lasts ~4.5 seconds if full
+      this.energy -= delta * 20;
       if (this.energy <= 0) {
         this.energy = 0;
         this.toggleOverclock(false);
       }
     } else {
-      // Passive slow recharge
-      this.energy = Math.min(this.maxEnergy, this.energy + delta * 3.5);
+      this.energy = Math.min(this.maxEnergy, this.energy + delta * 4);
     }
 
-    // 5. Invulnerability Blink
+    // Invulnerability blink
     if (this.invulnerableTimer > 0) {
       this.invulnerableTimer -= delta;
-      this.mesh.visible = Math.floor(Date.now() / 80) % 2 === 0;
+      this.mesh.visible = Math.floor(Date.now() / 90) % 2 === 0;
     } else {
       this.mesh.visible = true;
     }
 
-    // 6. Form Specific Animations
-    this.runAnimTime += delta * (gameSpeed / 12) * 10;
-    this.animateForms(delta);
+    // Politician cartoon animations
+    this.runAnimTime += delta * (gameSpeed / 12) * 11;
+    this.animateCartoonNetaji(delta);
 
-    // 7. Particle Trail & Ghosting
+    // Marigold trail update
     this.updateTrails(delta);
 
-    // 8. Update Bounding Box for Collisions
+    // Collision Box
     this.updateBoundingBox();
 
-    // 9. Record Replay History
+    // Replay record
     this.recordTimer += delta;
     if (this.recordTimer >= 0.08) {
       this.recordTimer = 0;
@@ -497,105 +519,104 @@ export class Player {
         y: this.mesh.position.y,
         z: this.mesh.position.z,
         rotZ: this.mesh.rotation.z,
-        form: this.form,
-        isSliding: this.isSliding
+        form: this.form
       });
-      // Cap at 15000 frames (~20 mins of running)
       if (this.history.length > 15000) this.history.shift();
     }
   }
 
-  animateForms(delta) {
+  animateCartoonNetaji(delta) {
     if (this.form === 'RUNNER') {
       if (this.isSliding) {
-        // Slide pose: low stance, arms forward, torso rotated
+        // Hilarious slide pose
         this.formGroups['RUNNER'].position.y = -0.45;
-        this.formGroups['RUNNER'].rotation.x = 0.85 * this.gravityDirection;
+        this.formGroups['RUNNER'].rotation.x = 0.9 * this.gravityDirection;
         this.leftLeg.rotation.x = -1.2;
         this.rightLeg.rotation.x = -0.3;
-        this.leftArm.rotation.x = 1.0;
-        this.rightArm.rotation.x = 1.0;
+        this.leftArm.rotation.x = 1.1;
+        this.rightArm.rotation.x = 1.1;
       } else if (!this.isGrounded) {
-        // Jump pose: tuck knees, arms swept back
+        // Jump pose: Kurta bills, arms flung up in panic/joy
         this.formGroups['RUNNER'].position.y = 0;
-        this.formGroups['RUNNER'].rotation.x = 0.25 * this.gravityDirection;
-        this.leftLeg.rotation.x = -0.8;
-        this.rightLeg.rotation.x = -0.7;
-        this.leftArm.rotation.x = -0.8;
-        this.rightArm.rotation.x = -0.8;
+        this.formGroups['RUNNER'].rotation.x = 0.2 * this.gravityDirection;
+        this.leftLeg.rotation.x = -0.7;
+        this.rightLeg.rotation.x = -0.6;
+        this.leftArm.rotation.x = -1.6; // Hands in air!
+        this.rightArm.rotation.x = -1.6;
+        this.kurtaSkirt.scale.set(1.3, 1.2, 1.3);
       } else {
-        // Running cycle
-        this.formGroups['RUNNER'].position.y = 0;
-        this.formGroups['RUNNER'].rotation.x = 0.15 * this.gravityDirection;
+        // Energetic brisk jogging animation
+        this.formGroups['RUNNER'].position.y = Math.abs(Math.sin(this.runAnimTime * 2)) * 0.12;
+        this.formGroups['RUNNER'].rotation.x = 0.18 * this.gravityDirection;
         const swing = Math.sin(this.runAnimTime);
-        this.leftLeg.rotation.x = swing * 0.9;
-        this.rightLeg.rotation.x = -swing * 0.9;
-        this.leftArm.rotation.x = -swing * 0.7;
-        this.rightArm.rotation.x = swing * 0.7;
-        this.runnerHead.rotation.y = Math.sin(this.runAnimTime * 0.5) * 0.1;
+
+        this.leftLeg.rotation.x = swing * 0.95;
+        this.rightLeg.rotation.x = -swing * 0.95;
+
+        // One hand greeting the crowd (wave) and one hand pumping!
+        this.leftArm.rotation.x = -swing * 0.8;
+        this.rightArm.rotation.x = 0.4 + Math.sin(this.runAnimTime * 3) * 0.3; // Waving to public!
+        this.rightArm.rotation.z = 0.3;
+
+        // Topi head bob
+        this.runnerHead.rotation.y = Math.sin(this.runAnimTime * 0.5) * 0.15;
+        this.topiGroup.rotation.z = Math.sin(this.runAnimTime * 2) * 0.08;
+
+        // Kurta skirt fluttering
+        this.kurtaSkirt.rotation.x = -0.2 + Math.sin(this.runAnimTime * 2) * 0.15;
+        this.scarfMesh.rotation.x = -0.3 + Math.sin(this.runAnimTime * 2) * 0.25;
       }
     } else if (this.form === 'DRONE') {
-      // Hover bobbing
-      const hover = Math.sin(this.runAnimTime * 1.5) * 0.08;
-      this.droneGroup.position.y = 0.9 + hover;
-      // Slight pitch forward
-      this.droneGroup.rotation.x = 0.18 * this.gravityDirection;
+      // Vespa riding bob
+      const hover = Math.sin(this.runAnimTime * 1.8) * 0.06;
+      this.droneGroup.position.y = 0.55 + hover;
+      this.droneGroup.rotation.x = 0.08 * this.gravityDirection;
     } else if (this.form === 'ORB') {
-      // Rapid gyro spinning
-      this.ring1.rotation.x += delta * 10;
-      this.ring1.rotation.y += delta * 6;
-      this.ring2.rotation.y += delta * 9;
-      this.ring2.rotation.z += delta * 7;
-      // Core rolling forward along track
+      // Roly-poly rolling sphere
       this.orbGroup.rotation.x -= delta * 18 * this.gravityDirection;
     }
   }
 
   updateTrails(delta) {
-    // Spawn new trail particle
     let p = this.trailParticles.find(part => part.life <= 0);
     if (p) {
       p.life = p.maxLife;
       p.mesh.position.copy(this.mesh.position);
       p.mesh.position.z += 0.4;
-      p.mesh.position.y += this.gravityDirection === 1 ? 0.6 : 6.9;
+      p.mesh.position.y += this.gravityDirection === 1 ? 0.6 : 6.8;
       p.mesh.visible = true;
-      p.mesh.material.opacity = this.isOverclock ? 0.85 : 0.45;
-      p.mesh.scale.setScalar(this.isOverclock ? 1.4 : 0.9);
+      p.mesh.material.opacity = this.isOverclock ? 0.9 : 0.5;
     }
 
-    // Update active particles
     this.trailParticles.forEach(part => {
       if (part.life > 0) {
         part.life -= delta;
         const ratio = part.life / part.maxLife;
-        part.mesh.material.opacity = ratio * (this.isOverclock ? 0.8 : 0.4);
+        part.mesh.material.opacity = ratio * 0.5;
         part.mesh.scale.multiplyScalar(0.97);
-        if (part.life <= 0) {
-          part.mesh.visible = false;
-        }
+        if (part.life <= 0) part.mesh.visible = false;
       }
     });
   }
 
   updateBoundingBox() {
-    let height = 1.8;
-    let width = 1.0;
-    let depth = 1.0;
-    let centerY = this.mesh.position.y + 0.9;
+    let height = 1.85;
+    let width = 1.05;
+    let depth = 1.1;
+    let centerY = this.mesh.position.y + 0.92;
 
     if (this.gravityDirection === -1) {
-      centerY = this.mesh.position.y - 0.9;
+      centerY = this.mesh.position.y - 0.92;
     }
 
     if (this.form === 'DRONE') {
-      width = 1.8;
-      height = 0.8;
-      centerY = this.mesh.position.y + (this.gravityDirection === 1 ? 0.9 : -0.9);
+      width = 1.3;
+      height = 1.1;
+      centerY = this.mesh.position.y + (this.gravityDirection === 1 ? 0.8 : -0.8);
     } else if (this.form === 'ORB') {
-      width = 0.8;
-      height = 0.8;
-      centerY = this.mesh.position.y + (this.gravityDirection === 1 ? 0.5 : -0.5);
+      width = 1.0;
+      height = 1.0;
+      centerY = this.mesh.position.y + (this.gravityDirection === 1 ? 0.65 : -0.65);
     } else if (this.isSliding) {
       height = 0.75;
       centerY = this.mesh.position.y + (this.gravityDirection === 1 ? 0.4 : -0.4);
@@ -627,9 +648,8 @@ export class Player {
     this.slideTimer = 0;
     this.isDead = false;
     this.invulnerableTimer = 0;
-    this.energy = 50;
+    this.energy = 60;
     this.isOverclock = false;
-    this.gravityMultiplier = 1.0;
     this.setForm('RUNNER', false);
     this.history = [];
     audio.setBulletTime(false);

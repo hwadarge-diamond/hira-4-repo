@@ -1,5 +1,5 @@
-// RUN AND RUN - Obstacles & Collision System
-// Low barriers (Drone passes), Overhead gantries (Orb rolls under / Runner slides), Glitch walls, Sweepers
+// RUN AND RUN: NETAJI IN EUROPE - European Street Obstacles
+// Cafe bistro tables, street barricades, laundry lines, wine barrels, luggage trolleys
 import * as THREE from 'three';
 
 export class ObstacleManager {
@@ -9,43 +9,43 @@ export class ObstacleManager {
     this.pool = [];
     this.laneWidth = 2.8;
 
-    // Shared geometries and materials for peak performance
+    // Shared European Obstacle Materials
     this.materials = {
-      highBarrier: new THREE.MeshStandardMaterial({
-        color: 0x180512,
-        roughness: 0.3,
-        metalness: 0.8
+      wood: new THREE.MeshStandardMaterial({
+        color: 0x5d4037,
+        roughness: 0.8
       }),
-      laserRed: new THREE.MeshBasicMaterial({
-        color: 0xff0055,
-        wireframe: false
+      metalBarricade: new THREE.MeshStandardMaterial({
+        color: 0xd32f2f, // European Red-White Police barrier
+        roughness: 0.4,
+        metalness: 0.3
       }),
-      laserCyan: new THREE.MeshBasicMaterial({
-        color: 0x00f3ff,
-        wireframe: false
+      barricadeWhite: new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        roughness: 0.4
       }),
-      laserYellow: new THREE.MeshBasicMaterial({
-        color: 0xffe600,
-        wireframe: false
+      cafeChair: new THREE.MeshStandardMaterial({
+        color: 0x2e7d32, // Classic Parisian green metal chairs
+        roughness: 0.5,
+        metalness: 0.2
       }),
-      glitch: new THREE.MeshBasicMaterial({
-        color: 0xaa00ff,
-        transparent: true,
-        opacity: 0.85
+      barrelOak: new THREE.MeshStandardMaterial({
+        color: 0x6d4c41,
+        roughness: 0.85
+      }),
+      laundryFabric: new THREE.MeshStandardMaterial({
+        color: 0xffb74d, // Yellow / cream clothesline
+        roughness: 0.9,
+        side: THREE.DoubleSide
       })
     };
   }
 
   spawnObstacle(type, lane, zPos, isCeiling = false) {
     let obs = this.pool.pop();
-    if (!obs) {
+    if (!obs || obs.type !== type) {
+      if (obs) this.scene.remove(obs.mesh);
       obs = this.createObstacleMesh(type);
-    } else {
-      // Re-configure pooled obstacle
-      if (obs.type !== type) {
-        this.scene.remove(obs.mesh);
-        obs = this.createObstacleMesh(type);
-      }
     }
 
     obs.type = type;
@@ -53,11 +53,8 @@ export class ObstacleManager {
     obs.isCeiling = isCeiling;
     obs.passed = false;
     obs.nearMissed = false;
-    obs.glitchTimer = 0;
-    obs.moveTimer = 0;
     obs.active = true;
 
-    // Position mesh
     const x = lane * this.laneWidth;
     let y = 0;
     if (isCeiling) {
@@ -80,57 +77,79 @@ export class ObstacleManager {
     const box = new THREE.Box3();
 
     if (type === 'HIGH_BARRIER') {
-      // Full height barrier (must switch lanes)
-      const postGeom = new THREE.BoxGeometry(0.35, 3.2, 0.35);
-      const leftPost = new THREE.Mesh(postGeom, this.materials.highBarrier);
-      leftPost.position.set(-1.1, 1.6, 0);
-      const rightPost = new THREE.Mesh(postGeom, this.materials.highBarrier);
-      rightPost.position.set(1.1, 1.6, 0);
+      // European Red-White Street Construction Barricade (Must switch lanes!)
+      const postGeom = new THREE.CylinderGeometry(0.08, 0.08, 2.6, 8);
+      const leftPost = new THREE.Mesh(postGeom, this.materials.metalBarricade);
+      leftPost.position.set(-1.0, 1.3, 0);
+      const rightPost = new THREE.Mesh(postGeom, this.materials.metalBarricade);
+      rightPost.position.set(1.0, 1.3, 0);
 
-      const gridGeom = new THREE.BoxGeometry(2.2, 2.6, 0.15);
-      const grid = new THREE.Mesh(gridGeom, this.materials.laserRed);
-      grid.position.set(0, 1.6, 0);
+      // Striped planks
+      const plankGeom = new THREE.BoxGeometry(2.1, 0.35, 0.1);
+      const plank1 = new THREE.Mesh(plankGeom, this.materials.metalBarricade);
+      plank1.position.set(0, 1.6, 0);
+      const plank2 = new THREE.Mesh(plankGeom, this.materials.barricadeWhite);
+      plank2.position.set(0, 1.1, 0);
+      const plank3 = new THREE.Mesh(plankGeom, this.materials.metalBarricade);
+      plank3.position.set(0, 0.6, 0);
 
-      group.add(leftPost, rightPost, grid);
+      group.add(leftPost, rightPost, plank1, plank2, plank3);
     } else if (type === 'LOW_BARRIER') {
-      // Low laser beam across ground (Drone can fly over, Runner/Orb can jump)
-      const postGeom = new THREE.BoxGeometry(0.3, 0.9, 0.3);
-      const leftPost = new THREE.Mesh(postGeom, this.materials.highBarrier);
-      leftPost.position.set(-1.1, 0.45, 0);
-      const rightPost = new THREE.Mesh(postGeom, this.materials.highBarrier);
-      rightPost.position.set(1.1, 0.45, 0);
+      // Parisian Bistro Cafe Table & Chairs (Jump over, or Vespa Drone glides over!)
+      const tableGeom = new THREE.CylinderGeometry(0.55, 0.55, 0.08, 12);
+      const tableTop = new THREE.Mesh(tableGeom, this.materials.cafeChair);
+      tableTop.position.set(0, 0.8, 0);
 
-      const beamGeom = new THREE.CylinderGeometry(0.12, 0.12, 2.2, 8);
-      beamGeom.rotateZ(Math.PI / 2);
-      const beam = new THREE.Mesh(beamGeom, this.materials.laserCyan);
-      beam.position.set(0, 0.5, 0);
+      const legGeom = new THREE.CylinderGeometry(0.04, 0.04, 0.8, 8);
+      const leg = new THREE.Mesh(legGeom, this.materials.cafeChair);
+      leg.position.set(0, 0.4, 0);
 
-      group.add(leftPost, rightPost, beam);
+      // Two cute bistro chairs
+      const chairBackGeom = new THREE.BoxGeometry(0.4, 0.45, 0.06);
+      const chair1 = new THREE.Mesh(chairBackGeom, this.materials.cafeChair);
+      chair1.position.set(-0.75, 0.6, 0);
+      const chair2 = new THREE.Mesh(chairBackGeom, this.materials.cafeChair);
+      chair2.position.set(0.75, 0.6, 0);
+
+      group.add(tableTop, leg, chair1, chair2);
     } else if (type === 'OVERHEAD_GANTRY') {
-      // Overhead gantry (Runner must slide, Orb rolls under; Drone hits!)
-      const postGeom = new THREE.BoxGeometry(0.35, 3.8, 0.35);
-      const leftPost = new THREE.Mesh(postGeom, this.materials.highBarrier);
+      // Overhead Clothesline / European Laundry Line with hanging sheets
+      // (Netaji must slide under, or Roly-Poly Orb rolls under!)
+      const postGeom = new THREE.BoxGeometry(0.18, 3.8, 0.18);
+      const leftPost = new THREE.Mesh(postGeom, this.materials.wood);
       leftPost.position.set(-1.1, 1.9, 0);
-      const rightPost = new THREE.Mesh(postGeom, this.materials.highBarrier);
+      const rightPost = new THREE.Mesh(postGeom, this.materials.wood);
       rightPost.position.set(1.1, 1.9, 0);
 
-      const topBarGeom = new THREE.BoxGeometry(2.35, 1.8, 0.6);
-      const topBar = new THREE.Mesh(topBarGeom, this.materials.laserYellow);
-      topBar.position.set(0, 2.8, 0);
+      // Rope line
+      const ropeGeom = new THREE.CylinderGeometry(0.03, 0.03, 2.3, 8);
+      ropeGeom.rotateZ(Math.PI / 2);
+      const rope = new THREE.Mesh(ropeGeom, this.materials.wood);
+      rope.position.set(0, 2.7, 0);
 
-      group.add(leftPost, rightPost, topBar);
-    } else if (type === 'GLITCH_WALL') {
-      // Shifting holographic barrier
-      const holoGeom = new THREE.BoxGeometry(2.4, 3.2, 0.2);
-      const holoMesh = new THREE.Mesh(holoGeom, this.materials.glitch);
-      holoMesh.position.set(0, 1.6, 0);
-      group.add(holoMesh);
+      // Hanging laundry sheet
+      const sheetGeom = new THREE.PlaneGeometry(1.8, 1.2);
+      const sheet = new THREE.Mesh(sheetGeom, this.materials.laundryFabric);
+      sheet.position.set(0, 2.05, 0);
+
+      group.add(leftPost, rightPost, rope, sheet);
     } else if (type === 'MOVING_SWEEPER') {
-      // Hover drone mine sweeping back and forth
-      const coreGeom = new THREE.OctahedronGeometry(0.75);
-      const coreMesh = new THREE.Mesh(coreGeom, this.materials.laserRed);
-      coreMesh.position.set(0, 1.4, 0);
-      group.add(coreMesh);
+      // Rolling Wooden Wine Barrels rolling across the lane!
+      const barrelGeom = new THREE.CylinderGeometry(0.65, 0.72, 1.4, 12);
+      barrelGeom.rotateZ(Math.PI / 2);
+      const barrel = new THREE.Mesh(barrelGeom, this.materials.barrelOak);
+      barrel.position.set(0, 0.7, 0);
+      group.add(barrel);
+    } else if (type === 'GLITCH_WALL') {
+      // Media Press Flash mob barricade
+      const pressGeom = new THREE.BoxGeometry(2.3, 2.8, 0.2);
+      const pressMat = new THREE.MeshStandardMaterial({
+        color: 0x1e88e5,
+        roughness: 0.5
+      });
+      const pressWall = new THREE.Mesh(pressGeom, pressMat);
+      pressWall.position.set(0, 1.4, 0);
+      group.add(pressWall);
     }
 
     return {
@@ -153,44 +172,33 @@ export class ObstacleManager {
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
       const obs = this.obstacles[i];
 
-      // Dynamic obstacle behaviors
-      if (obs.type === 'GLITCH_WALL') {
+      if (obs.type === 'MOVING_SWEEPER') {
+        obs.moveTimer += delta * 2.8;
+        obs.mesh.position.x = Math.sin(obs.moveTimer) * (this.laneWidth * 0.95);
+        obs.mesh.rotation.x += delta * 5;
+      } else if (obs.type === 'GLITCH_WALL') {
         obs.glitchTimer += delta;
-        // Flickers and teleports lane every 1.4s
         if (obs.glitchTimer > 1.4) {
           obs.glitchTimer = 0;
           obs.lane = (obs.lane === 0 ? (Math.random() > 0.5 ? 1 : -1) : 0);
           obs.mesh.position.x = obs.lane * this.laneWidth;
         }
-        obs.mesh.visible = Math.floor(Date.now() / 70) % 5 !== 0;
-      } else if (obs.type === 'MOVING_SWEEPER') {
-        obs.moveTimer += delta * 2.8;
-        obs.mesh.position.x = Math.sin(obs.moveTimer) * (this.laneWidth * 0.95);
-        obs.mesh.rotation.y += delta * 4;
       }
 
-      // Update AABB hitbox
       obs.box.setFromObject(obs.mesh);
 
-      // Check Near-Miss (player passes very close without hitting)
+      // Check Near-Miss
       const zDiff = obs.mesh.position.z - playerZ;
       if (!obs.nearMissed && !obs.passed && zDiff > -0.5 && zDiff < 1.8) {
         const xDist = Math.abs(obs.mesh.position.x - player.mesh.position.x);
-        // If in adjacent lane or closely dodging
         if (xDist > 1.2 && xDist < 2.5) {
           obs.nearMissed = true;
           if (onNearMiss) onNearMiss(obs);
         }
       }
 
-      if (zDiff > 1.5) {
-        obs.passed = true;
-      }
-
-      // Recycle obstacle if far behind player
-      if (zDiff > 25) {
-        this.recycleObstacle(i);
-      }
+      if (zDiff > 1.5) obs.passed = true;
+      if (zDiff > 25) this.recycleObstacle(i);
     }
   }
 
@@ -203,41 +211,29 @@ export class ObstacleManager {
       const obs = this.obstacles[i];
       if (!obs.active) continue;
 
-      // Quick Z distance cull
       const zDiff = Math.abs(obs.mesh.position.z - player.mesh.position.z);
       if (zDiff > 2.8) continue;
 
-      // Surface match: if obstacle is ceiling and player is floor, no collision!
       const playerIsCeiling = player.gravityDirection === -1;
       if (obs.isCeiling !== playerIsCeiling) continue;
 
-      // Check bounding box intersection
       if (playerBox.intersectsBox(obs.box)) {
-        // FORM SPECIFIC EVASIONS:
-        // 1. DRONE: Glides completely over LOW_BARRIER!
-        if (obs.type === 'LOW_BARRIER' && player.form === 'DRONE') {
-          continue;
-        }
+        // FORM PASSES:
+        // 1. Vespa Drone glides right over Cafe Tables!
+        if (obs.type === 'LOW_BARRIER' && player.form === 'DRONE') continue;
 
-        // 2. ORB: Rolls cleanly under OVERHEAD_GANTRY without sliding!
-        if (obs.type === 'OVERHEAD_GANTRY' && player.form === 'ORB') {
-          continue;
-        }
+        // 2. Roly-Poly Orb rolls under overhead Laundry Lines!
+        if (obs.type === 'OVERHEAD_GANTRY' && player.form === 'ORB') continue;
 
-        // 3. RUNNER: Can slide under OVERHEAD_GANTRY!
-        if (obs.type === 'OVERHEAD_GANTRY' && player.form === 'RUNNER' && player.isSliding) {
-          continue;
-        }
+        // 3. Runner slides under Laundry Lines!
+        if (obs.type === 'OVERHEAD_GANTRY' && player.form === 'RUNNER' && player.isSliding) continue;
 
-        // 4. JUMP EVASION: if player is high enough over LOW_BARRIER
+        // 4. Jump clearance over Cafe Table
         if (obs.type === 'LOW_BARRIER') {
-          const jumpClearance = playerIsCeiling ? (player.mesh.position.y < 6.4) : (player.mesh.position.y > 1.1);
-          if (jumpClearance) {
-            continue;
-          }
+          const jumpClearance = playerIsCeiling ? (player.mesh.position.y < 6.4) : (player.mesh.position.y > 1.15);
+          if (jumpClearance) continue;
         }
 
-        // Real Collision Confirmed!
         return obs;
       }
     }

@@ -1,5 +1,5 @@
-// RUN AND RUN - Master Game Engine
-// Integrates Three.js, UnrealBloomPass, AI Director, Hunter Chase Drone, Ghost Replay, Daily Challenge, Zones
+// RUN AND RUN: NETAJI IN EUROPE - Master Game Engine
+// Integrates Three.js, Netaji Player, European Street World, Chasing Public Crowd, Laddoos & Daily Challenge
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -12,7 +12,6 @@ import { ObstacleManager } from './obstacles.js';
 import { PowerupManager } from './powerups.js';
 import { UIManager } from './ui.js';
 
-// Seeded PRNG for Daily Challenge
 class SeededRNG {
   constructor(seed = 12345678) {
     this.seed = seed;
@@ -33,77 +32,61 @@ export class Game {
     // Game stats
     this.score = 0;
     this.distance = 0;
-    this.coinsRun = 0;
+    this.coinsRun = 0; // Laddoos collected
     this.combo = 1;
     this.comboTimer = 0;
     this.nearMisses = 0;
-    this.gameSpeed = 26; // Base running speed
+    this.gameSpeed = 26;
     this.targetSpeed = 26;
 
-    // Hunter Apex Drone (Chase Boss)
-    this.hunterDistance = 38; // Meters behind player
-    this.hunterMaxDist = 45;
-    this.hunterMesh = null;
+    // The Chasing Public Crowd (Voters & Journalists chasing Netaji!)
+    this.crowdDistance = 38;
+    this.crowdMaxDist = 45;
+    this.crowdGroup = null;
 
-    // Zones
-    this.currentZone = 'NORMAL';
+    // European Zones
+    this.currentZone = 'PARIS';
     this.zoneDistance = 0;
 
-    // AI Director ("Neural Nexus")
-    this.aiStressLevel = 0.5; // 0 (relaxed) to 1 (intense)
-    this.recentDodges = 0;
-    this.recentHits = 0;
+    // AI Director
+    this.aiStressLevel = 0.5;
     this.nextSpawnZ = -30;
 
     // Ghost Replay
-    this.ghostMesh = null;
+    this.ghostGroup = null;
     this.ghostHistory = [];
     this.ghostFrameIndex = 0;
 
-    // Quality & Postprocessing
     this.useBloom = true;
     this.clock = new THREE.Clock();
 
-    // Load Saved Data
     this.loadSaveData();
-
-    // Setup Three.js Core
     this.initThree();
 
-    // Subsystems
     this.world = new World(this.scene, this.camera);
     this.player = new Player(this.scene);
     this.obstacles = new ObstacleManager(this.scene);
     this.powerups = new PowerupManager(this.scene);
     this.ui = new UIManager(this);
 
-    // Apply saved customization
     this.player.applySkin(this.saveData.selectedSkin);
     this.player.applyTrail(this.saveData.selectedTrail);
 
-    // Build Hunter Drone 3D Model
-    this.buildHunterDrone();
+    // Build the Chasing Public Crowd (Citizens & Media chasing Netaji)
+    this.buildChasingPublicCrowd();
 
     // Build Ghost Clone
     this.buildGhostClone();
 
-    // Input handlers
     this.setupInput();
 
-    // Resize handler
     window.addEventListener('resize', () => this.onResize());
-
-    // Tab blur pause
     window.addEventListener('blur', () => {
-      if (this.isRunning && !this.isPaused) {
-        this.togglePause();
-      }
+      if (this.isRunning && !this.isPaused) this.togglePause();
     });
 
-    // Initial Menu display
     this.ui.showMainMenu();
 
-    // Start render loop
     this.animate = this.animate.bind(this);
     requestAnimationFrame(this.animate);
   }
@@ -116,30 +99,27 @@ export class Game {
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
       antialias: true,
-      powerPreference: 'high-performance',
-      stencil: false,
-      depth: true
+      powerPreference: 'high-performance'
     });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.1;
+    this.renderer.toneMappingExposure = 1.05;
 
-    // Post-processing UnrealBloomPass setup
     try {
       this.composer = new EffectComposer(this.renderer);
       const renderPass = new RenderPass(this.scene, this.camera);
       this.composer.addPass(renderPass);
 
+      // Subtle warm sunlit bloom
       this.bloomPass = new UnrealBloomPass(
         new THREE.Vector2(window.innerWidth, window.innerHeight),
-        1.15, // bloom strength
-        0.35, // radius
-        0.82  // threshold
+        0.75, // Soft glow
+        0.3,
+        0.88
       );
       this.composer.addPass(this.bloomPass);
     } catch (e) {
-      console.warn('Bloom initialization failed, falling back to basic render:', e);
       this.useBloom = false;
     }
   }
@@ -148,56 +128,100 @@ export class Game {
     this.useBloom = enabled;
   }
 
-  buildHunterDrone() {
-    this.hunterGroup = new THREE.Group();
+  // BUILD THE 3D CARTOON PUBLIC CROWD CHASING NETAJI!
+  buildChasingPublicCrowd() {
+    this.crowdGroup = new THREE.Group();
+    this.crowdMembers = [];
 
-    // Aggressive stealth chassis
-    const bodyGeom = new THREE.ConeGeometry(1.2, 3.2, 4);
-    bodyGeom.rotateX(Math.PI / 2);
-    const bodyMat = new THREE.MeshStandardMaterial({
-      color: 0x110308,
-      metalness: 0.95,
-      roughness: 0.15
+    // Materials for the crowd
+    const skinMat = new THREE.MeshStandardMaterial({ color: 0xdfa067, roughness: 0.6 });
+    const clothesColors = [0x1e88e5, 0xe53935, 0x43a047, 0xfb8c00, 0x8e24aa, 0x00acc1];
+
+    // Create 6 cartoon citizens running in a pack
+    const offsets = [
+      { x: -1.8, z: 0 },
+      { x: 0.0, z: -0.8 },
+      { x: 1.8, z: 0.2 },
+      { x: -0.9, z: 1.2 },
+      { x: 0.9, z: 1.0 },
+      { x: 0.0, z: 2.2 }
+    ];
+
+    offsets.forEach((off, idx) => {
+      const member = new THREE.Group();
+      member.position.set(off.x, 0, off.z);
+
+      const clothMat = new THREE.MeshStandardMaterial({ color: clothesColors[idx % clothesColors.length], roughness: 0.7 });
+
+      // Torso
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 0.75, 8), clothMat);
+      body.position.y = 0.9;
+      member.add(body);
+
+      // Head
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 12), skinMat);
+      head.position.y = 1.45;
+      member.add(head);
+
+      // Legs
+      const legGeom = new THREE.CylinderGeometry(0.09, 0.08, 0.65, 8);
+      const lLeg = new THREE.Mesh(legGeom, clothMat);
+      lLeg.position.set(-0.16, 0.35, 0);
+      const rLeg = new THREE.Mesh(legGeom, clothMat);
+      rLeg.position.set(0.16, 0.35, 0);
+      member.add(lLeg, rLeg);
+
+      // Arms
+      const armGeom = new THREE.CylinderGeometry(0.08, 0.07, 0.6, 8);
+      const lArm = new THREE.Mesh(armGeom, clothMat);
+      lArm.position.set(-0.38, 0.95, 0);
+      const rArm = new THREE.Mesh(armGeom, clothMat);
+      rArm.position.set(0.38, 0.95, 0);
+      member.add(lArm, rArm);
+
+      // Distinct crowd props:
+      if (idx === 0) {
+        // Supporter holding a big Campaign Placard ("VOTE!")
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.8, 8), skinMat);
+        pole.position.set(0.35, 1.6, 0.2);
+        const sign = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.6, 0.05), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        sign.position.set(0.35, 2.3, 0.2);
+        member.add(pole, sign);
+      } else if (idx === 1) {
+        // TV Reporter with long microphone boom
+        const micPole = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.4, 8), new THREE.MeshBasicMaterial({ color: 0x222222 }));
+        micPole.rotateX(Math.PI / 4);
+        micPole.position.set(0, 1.3, -0.6);
+        const micHead = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), new THREE.MeshBasicMaterial({ color: 0xd32f2f }));
+        micHead.position.set(0, 1.8, -1.1);
+        member.add(micPole, micHead);
+      } else if (idx === 2) {
+        // Supporter with a big floral marigold garland!
+        const garland = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.12, 8, 16), new THREE.MeshBasicMaterial({ color: 0xffa000 }));
+        garland.position.set(0, 1.2, -0.3);
+        member.add(garland);
+      }
+
+      this.crowdGroup.add(member);
+      this.crowdMembers.push({
+        group: member,
+        lLeg, rLeg, lArm, rArm,
+        animOffset: idx * 0.7
+      });
     });
-    const body = new THREE.Mesh(bodyGeom, bodyMat);
-    this.hunterGroup.add(body);
 
-    // Glowing Menacing Red Optics
-    const eyeGeom = new THREE.BoxGeometry(0.8, 0.14, 0.2);
-    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0022 });
-    const eye = new THREE.Mesh(eyeGeom, eyeMat);
-    eye.position.set(0, 0.1, 1.4);
-    this.hunterGroup.add(eye);
-
-    // Swept hunter wings
-    const wingGeom = new THREE.BoxGeometry(3.6, 0.1, 0.9);
-    const wings = new THREE.Mesh(wingGeom, bodyMat);
-    wings.position.set(0, 0, -0.4);
-    this.hunterGroup.add(wings);
-
-    // Dual afterburner nozzles
-    const thrusterGeom = new THREE.CylinderGeometry(0.25, 0.35, 0.6, 8);
-    thrusterGeom.rotateX(Math.PI / 2);
-    const thrustMat = new THREE.MeshBasicMaterial({ color: 0xff3300 });
-
-    const leftThruster = new THREE.Mesh(thrusterGeom, thrustMat);
-    leftThruster.position.set(-0.75, 0, -1.6);
-    const rightThruster = new THREE.Mesh(thrusterGeom, thrustMat);
-    rightThruster.position.set(0.75, 0, -1.6);
-    this.hunterGroup.add(leftThruster, rightThruster);
-
-    this.hunterGroup.position.set(0, 2, 38);
-    this.scene.add(this.hunterGroup);
+    this.crowdGroup.position.set(0, 0, 38);
+    this.scene.add(this.crowdGroup);
   }
 
   buildGhostClone() {
     this.ghostGroup = new THREE.Group();
     const geom = new THREE.BoxGeometry(0.8, 1.8, 0.8);
     const mat = new THREE.MeshBasicMaterial({
-      color: 0x00f3ff,
+      color: 0xffb74d,
       wireframe: true,
       transparent: true,
-      opacity: 0.4
+      opacity: 0.35
     });
     const mesh = new THREE.Mesh(geom, mat);
     mesh.position.y = 0.9;
@@ -207,9 +231,7 @@ export class Game {
   }
 
   setupInput() {
-    // Keyboard controls
     window.addEventListener('keydown', (e) => {
-      // Audio trigger on user input
       audio.init();
 
       if (!this.isRunning) return;
@@ -313,38 +335,33 @@ export class Game {
     this.nearMisses = 0;
     this.gameSpeed = 26;
     this.targetSpeed = 26;
-    this.hunterDistance = 38;
+    this.crowdDistance = 38;
     this.nextSpawnZ = -30;
-    this.currentZone = 'NORMAL';
+    this.currentZone = 'PARIS';
     this.zoneDistance = 0;
     this.ghostFrameIndex = 0;
 
-    // Reset systems
     this.player.reset();
     this.world.reset();
     this.obstacles.reset();
     this.powerups.reset();
 
-    // Setup Seeded RNG if daily
     if (isDaily) {
       const today = new Date();
       const seedStr = `${today.getFullYear()}${today.getMonth() + 1}${today.getDate()}`;
       this.rng = new SeededRNG(parseInt(seedStr, 10));
-      this.ui.spawnPopup('DAILY CHALLENGE SEED ACTIVE', 'hype');
+      this.ui.spawnPopup('DAILY CAMPAIGN SEED ACTIVE', 'hype');
     } else {
       this.rng = { next: () => Math.random() };
     }
 
-    // Load Ghost replay if available
     this.ghostHistory = this.saveData.bestRunGhost || [];
     this.ghostGroup.visible = this.ghostHistory.length > 0;
 
-    // UI & Audio
     this.ui.showHUD();
     audio.startMusic();
     audio.setHunterAlert(false);
 
-    // Initial Track population
     for (let i = 0; i < 6; i++) {
       this.spawnTrackChunk();
     }
@@ -362,7 +379,6 @@ export class Game {
     }
   }
 
-  // ADAPTIVE AI DIRECTOR ("NEURAL NEXUS") TRACK SPAWNER
   spawnTrackChunk() {
     const spacing = Math.max(16, 32 - (this.gameSpeed - 26) * 0.35 + (1 - this.aiStressLevel) * 8);
     const z = this.nextSpawnZ;
@@ -371,13 +387,11 @@ export class Game {
     const r = this.rng.next();
     const isCeiling = this.player.gravityDirection === -1;
 
-    // 1. Spawn Powerups & Gravity Pads occasionally
+    // 1. Collectibles / Powerups
     if (r < 0.14) {
-      // Gravity Flip Pad on track
       const lane = Math.floor(this.rng.next() * 3) - 1;
       this.powerups.spawnItem('GRAVITY_PAD', lane, z, isCeiling);
     } else if (r < 0.38) {
-      // Powerup or Coins
       const pRoll = this.rng.next();
       const lane = Math.floor(this.rng.next() * 3) - 1;
       if (pRoll < 0.08) {
@@ -389,28 +403,21 @@ export class Game {
       } else if (pRoll < 0.52) {
         this.powerups.spawnItem('MULTIPLIER_2X', lane, z, isCeiling);
       } else {
-        // Line of coins
+        // Line of Golden Laddoos
         for (let c = 0; c < 4; c++) {
           this.powerups.spawnItem('COIN', lane, z - c * 2.8, isCeiling);
         }
       }
     }
 
-    // 2. Spawn Obstacle based on AI Stress & Variety
+    // 2. Obstacles
     const obsTypes = ['HIGH_BARRIER', 'LOW_BARRIER', 'OVERHEAD_GANTRY'];
-    if (this.currentZone === 'GLITCH') {
-      obsTypes.push('GLITCH_WALL');
-    }
-    if (this.gameSpeed > 30) {
-      obsTypes.push('MOVING_SWEEPER');
-    }
+    if (this.gameSpeed > 30) obsTypes.push('MOVING_SWEEPER');
 
     const chosenType = obsTypes[Math.floor(this.rng.next() * obsTypes.length)];
     const primaryLane = Math.floor(this.rng.next() * 3) - 1;
-
     this.obstacles.spawnObstacle(chosenType, primaryLane, z, isCeiling);
 
-    // AI Director: On high streaks, spawn a companion obstacle in second lane
     if (this.aiStressLevel > 0.75 && this.rng.next() > 0.5) {
       const secondLane = primaryLane === 0 ? (this.rng.next() > 0.5 ? 1 : -1) : 0;
       const secondType = chosenType === 'HIGH_BARRIER' ? 'LOW_BARRIER' : 'OVERHEAD_GANTRY';
@@ -418,60 +425,45 @@ export class Game {
     }
   }
 
-  // ZONE MANAGER
   updateZones(delta) {
     this.zoneDistance += this.gameSpeed * delta;
 
-    // Shift zone every 1000m
     if (this.zoneDistance > 1000) {
       this.zoneDistance = 0;
-      const zones = ['NORMAL', 'MAGNET', 'LOW_GRAVITY', 'GLITCH'];
+      const zones = ['PARIS', 'AMSTERDAM', 'FLORENCE'];
       const nextIdx = (zones.indexOf(this.currentZone) + 1) % zones.length;
       this.currentZone = zones[nextIdx];
 
-      if (this.currentZone === 'MAGNET') {
-        this.ui.showZoneBanner('MAGNET FLUX ZONE', 'Coins gravitationally pulled to player!');
-        this.world.setTheme('neon');
-      } else if (this.currentZone === 'LOW_GRAVITY') {
-        this.ui.showZoneBanner('ZERO-G VOID ZONE', 'Lunar floaty physics enabled!');
-        this.player.gravityMultiplier = 0.52;
-        this.world.setTheme('ice');
-      } else if (this.currentZone === 'GLITCH') {
-        this.ui.showZoneBanner('CYBER-GLITCH ZONE', 'Obstacles phase and teleport lanes!');
-        this.player.gravityMultiplier = 1.0;
-        this.world.setTheme('desert');
+      if (this.currentZone === 'AMSTERDAM') {
+        this.ui.showZoneBanner('AMSTERDAM CANAL ROW', 'Laddoo magnet pulse activated!');
+        this.world.setTheme('amsterdam');
+      } else if (this.currentZone === 'FLORENCE') {
+        this.ui.showZoneBanner('TUSCAN PIAZZA SUN', 'Warm breezy rooftop run!');
+        this.world.setTheme('florence');
       } else {
-        this.ui.showZoneBanner('NEON METROPOLIS', 'Standard high-speed corridor');
-        this.player.gravityMultiplier = 1.0;
-        this.world.setTheme('neon');
+        this.ui.showZoneBanner('PARISIAN BOULEVARD', 'Grand European capital campaign!');
+        this.world.setTheme('paris');
       }
     }
   }
 
-  // NEAR MISS & COMBO
   onNearMiss(obstacle) {
     audio.playNearMiss();
     this.nearMisses++;
     this.combo = Math.min(10, this.combo + 1);
-    this.comboTimer = 3.5; // Combo resets in 3.5s
+    this.comboTimer = 3.5;
 
-    // Bonus score
     const bonus = 150 * this.combo;
     this.score += bonus;
     this.player.addEnergy(8);
 
-    // UI Popup
-    this.ui.spawnPopup(`NEAR MISS x${this.combo}! +${bonus}`, 'hype');
+    this.ui.spawnPopup(`CLEAN DODGE x${this.combo}! +${bonus}`, 'hype');
     this.world.triggerCameraShake(0.18);
-
-    // AI Director feedback: player is performing well!
     this.aiStressLevel = Math.min(1.0, this.aiStressLevel + 0.1);
     this.trackMission('nearmiss', 1);
   }
 
-  // CRASH / HIT LOGIC (Hunter Chase & Second Chance)
   handleHit(obstacle) {
-    // 1. If Jetpacking: smash through obstacle!
     if (this.powerups.isJetpacking()) {
       audio.playImpact();
       this.world.triggerCameraShake(0.4);
@@ -481,32 +473,28 @@ export class Game {
       return;
     }
 
-    // 2. If Shield active: break shield and survive!
     if (this.powerups.hasShield()) {
       this.powerups.breakShield();
       this.player.invulnerableTimer = 1.8;
       this.world.triggerCameraShake(0.5);
-      this.ui.spawnPopup('SHIELD CRACKED!', 'warn');
+      this.ui.spawnPopup('Z-PLUS SECURITY DEFLECTED HIT!', 'warn');
       return;
     }
 
-    // 3. HUNTER CHASE TWO-HIT SYSTEM:
-    // If Hunter is far (> 14m), Hunter surges forward to 6m, warning sirens blare!
-    if (this.hunterDistance > 14) {
+    // Two-hit Chasing Public crowd mechanic:
+    if (this.crowdDistance > 14) {
       audio.playImpact();
-      this.hunterDistance = 7;
+      this.crowdDistance = 7; // The crowd swarms right behind Netaji!
       this.player.invulnerableTimer = 2.2;
       this.combo = 1;
       this.world.triggerCameraShake(0.65);
-      this.ui.spawnPopup('THREAT DETECTED! HUNTER CLOSING IN!', 'warn');
+      this.ui.spawnPopup('THE CROWD IS CLOSING IN! RUN NETAJI!', 'warn');
       audio.setHunterAlert(true);
-
-      // AI Director: ease obstacle density temporarily for player recovery
       this.aiStressLevel = 0.25;
       return;
     }
 
-    // 4. Fatal Capture by Hunter Apex!
+    // Caught by the crowd!
     this.gameOver();
   }
 
@@ -516,13 +504,11 @@ export class Game {
     audio.playGameOver();
     audio.stopMusic();
     audio.setHunterAlert(false);
-    this.world.triggerCameraShake(0.9);
+    this.world.triggerCameraShake(0.85);
 
-    // Update saves & records
     this.saveData.coins += this.coinsRun;
     if (this.score > this.saveData.bestScore) {
       this.saveData.bestScore = Math.floor(this.score);
-      // Save best run ghost replay!
       this.saveData.bestRunGhost = [...this.player.history];
     }
 
@@ -537,7 +523,6 @@ export class Game {
 
     this.saveToStorage();
 
-    // Show Game Over UI
     this.ui.showGameOver({
       score: this.score,
       distance: this.distance,
@@ -547,18 +532,14 @@ export class Game {
     });
   }
 
-  // MAIN GAME LOOP (60 FPS)
   animate() {
     requestAnimationFrame(this.animate);
-
     const delta = Math.min(0.08, this.clock.getDelta());
 
     if (this.isRunning && !this.isPaused) {
-      // Dynamic time scale (Bullet time = 0.35x world speed)
       const timeScale = this.player.isOverclock ? 0.35 : 1.0;
       const simDelta = delta * timeScale;
 
-      // Distance & Speed Progression
       this.distance += this.gameSpeed * simDelta;
       this.targetSpeed = 26 + Math.min(22, this.distance * 0.005);
       if (this.powerups.isJetpacking()) {
@@ -568,37 +549,25 @@ export class Game {
       }
       audio.setGameSpeed(this.gameSpeed / 26);
 
-      // Score accumulation
       const mult = this.powerups.activeEffects.multiplierTimer > 0 ? 2 : 1;
       this.score += this.gameSpeed * simDelta * this.combo * mult * 0.6;
 
-      // Combo Decay
       if (this.combo > 1) {
         this.comboTimer -= simDelta;
-        if (this.comboTimer <= 0) {
-          this.combo = 1;
-        }
+        if (this.comboTimer <= 0) this.combo = 1;
       }
 
-      // Track distance along -Z
       this.player.mesh.position.z -= this.gameSpeed * simDelta;
-
-      // Player update (Player reacts at 1.0x delta during overclock for snappy matrix dodging!)
       this.player.update(this.player.isOverclock ? delta * 0.9 : simDelta, this.gameSpeed);
 
-      // Procedural Spawn Check
       if (this.player.mesh.position.z - 140 < this.nextSpawnZ) {
         this.spawnTrackChunk();
       }
 
-      // Obstacles update & collision
       this.obstacles.update(simDelta, this.player, (obs) => this.onNearMiss(obs));
       const collidedObs = this.obstacles.checkCollision(this.player);
-      if (collidedObs) {
-        this.handleHit(collidedObs);
-      }
+      if (collidedObs) this.handleHit(collidedObs);
 
-      // Powerups update
       this.powerups.update(simDelta, this.player, (type, count) => {
         if (type === 'COIN') {
           this.coinsRun += count;
@@ -609,28 +578,21 @@ export class Game {
         }
       });
 
-      // Hunter Apex Drone chase update
-      this.updateHunter(simDelta);
+      // Update Chasing Public Crowd
+      this.updateChasingPublicCrowd(simDelta);
 
-      // Ghost Replay Clone update
       this.updateGhost();
-
-      // Zone rules update
       this.updateZones(simDelta);
-
-      // World, Camera & Cityscape update
       this.world.update(simDelta, this.player, this.gameSpeed);
 
-      // HUD update
       this.ui.updateHUD({
         score: this.score,
         distance: this.distance,
         coinsRun: this.coinsRun,
         combo: this.combo
-      }, this.player, this.powerups, this.hunterDistance);
+      }, this.player, this.powerups, this.crowdDistance);
     }
 
-    // Render Scene (with UnrealBloomPass or standard WebGLRenderer)
     if (this.useBloom && this.composer) {
       this.composer.render();
     } else {
@@ -638,33 +600,35 @@ export class Game {
     }
   }
 
-  updateHunter(delta) {
-    // If player is running well or jetpacking, Hunter pulls away slowly
+  updateChasingPublicCrowd(delta) {
     if (this.powerups.isJetpacking() || this.player.isOverclock) {
-      this.hunterDistance = Math.min(this.hunterMaxDist, this.hunterDistance + delta * 8);
+      this.crowdDistance = Math.min(this.crowdMaxDist, this.crowdDistance + delta * 8);
     } else {
-      // Natural recovery towards 35m if player avoids mistakes
-      this.hunterDistance = Math.min(this.hunterMaxDist, this.hunterDistance + delta * 2.2);
+      this.crowdDistance = Math.min(this.crowdMaxDist, this.crowdDistance + delta * 2.2);
     }
 
-    // Alarm alert state
-    if (this.hunterDistance > 18) {
+    if (this.crowdDistance > 18) {
       audio.setHunterAlert(false);
     }
 
-    // Smooth Hunter mesh positioning behind player
     const pPos = this.player.mesh.position;
-    this.hunterGroup.position.x = THREE.MathUtils.lerp(this.hunterGroup.position.x, pPos.x, delta * 6);
-    this.hunterGroup.position.y = THREE.MathUtils.lerp(this.hunterGroup.position.y, pPos.y + 1.8, delta * 6);
-    this.hunterGroup.position.z = pPos.z + this.hunterDistance;
+    this.crowdGroup.position.x = THREE.MathUtils.lerp(this.crowdGroup.position.x, pPos.x, delta * 6);
+    this.crowdGroup.position.y = THREE.MathUtils.lerp(this.crowdGroup.position.y, pPos.y, delta * 6);
+    this.crowdGroup.position.z = pPos.z + this.crowdDistance;
 
-    // Hover bob
-    this.hunterGroup.position.y += Math.sin(Date.now() * 0.005) * 0.12;
+    // Animate crowd running legs & arms!
+    const animTime = Date.now() * 0.012;
+    this.crowdMembers.forEach(m => {
+      const swing = Math.sin(animTime + m.animOffset);
+      m.lLeg.rotation.x = swing * 0.9;
+      m.rLeg.rotation.x = -swing * 0.9;
+      m.lArm.rotation.x = -swing * 0.8;
+      m.rArm.rotation.x = swing * 0.8;
+    });
   }
 
   updateGhost() {
     if (!this.ghostGroup.visible || this.ghostHistory.length === 0) return;
-
     if (this.ghostFrameIndex < this.ghostHistory.length) {
       const snap = this.ghostHistory[this.ghostFrameIndex];
       this.ghostGroup.position.set(snap.x, snap.y, snap.z);
@@ -673,7 +637,6 @@ export class Game {
     }
   }
 
-  // MISSION TRACKING & SAVE PERSISTENCE
   trackMission(type, amount) {
     this.missions.forEach(m => {
       if (m.type === type && !m.claimed) {
@@ -711,10 +674,10 @@ export class Game {
     const defaultData = {
       bestScore: 0,
       coins: 0,
-      unlockedSkins: ['striker'],
-      selectedSkin: 'striker',
-      unlockedTrails: ['cyan'],
-      selectedTrail: 'cyan',
+      unlockedSkins: ['classic'],
+      selectedSkin: 'classic',
+      unlockedTrails: ['golden'],
+      selectedTrail: 'golden',
       bestRunGhost: []
     };
 
@@ -725,11 +688,10 @@ export class Game {
       this.saveData = defaultData;
     }
 
-    // Rotating 3 missions
     this.missions = [
-      { id: 1, type: 'gravity', title: 'QUANTUM GRAVITY: Invert 5 Times', target: 5, progress: 0, reward: 150, claimed: false },
-      { id: 2, type: 'coins', title: 'BIT HARVEST: Collect 120 Coins', target: 120, progress: 0, reward: 200, claimed: false },
-      { id: 3, type: 'nearmiss', title: 'CYBER DRIFT: Perform 6 Near Misses', target: 6, progress: 0, reward: 250, claimed: false }
+      { id: 1, type: 'gravity', title: 'ROOFTOP DASH: Policy Flip 5 Times', target: 5, progress: 0, reward: 150, claimed: false },
+      { id: 2, type: 'coins', title: 'LADDOO RUSH: Collect 120 Laddoos', target: 120, progress: 0, reward: 200, claimed: false },
+      { id: 3, type: 'nearmiss', title: 'POLITICAL DRIFT: 6 Near Misses', target: 6, progress: 0, reward: 250, claimed: false }
     ];
   }
 
@@ -745,13 +707,10 @@ export class Game {
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
-    if (this.composer) {
-      this.composer.setSize(w, h);
-    }
+    if (this.composer) this.composer.setSize(w, h);
   }
 }
 
-// Bootstrap on DOM Load
 window.addEventListener('DOMContentLoaded', () => {
   window.gameInstance = new Game();
 });
