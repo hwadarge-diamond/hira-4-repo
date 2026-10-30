@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>RUN AND RUN // 3D Cyberpunk Endless Runner</title>
+  <link rel="stylesheet" href="style.css">
+  <meta name="description" content="RUN AND RUN: A futuristic 3D cyberpunk endless runner featuring gravity flips, shape-shifting forms, neural overclock bullet-time, and dynamic chase AI.">
+
+  <!-- ES Module Importmap for Three.js & Post-Processing -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="game-container">
+    <!-- 3D WebGL Canvas -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Retro-futuristic scanlines overlay -->
+    <div class="scanlines"></div>
+
+    <!-- UI Overlay Layer -->
+    <div id="ui-layer">
+      <!-- IN-GAME HUD -->
+      <div id="hud" class="hidden">
+        <!-- Top Bar -->
+        <div class="hud-top-bar">
+          <div class="hud-left">
+            <div class="hud-stat-box">
+              <div class="hud-label">SCORE</div>
+              <div id="hud-score" class="hud-value">0</div>
+            </div>
+            <div class="hud-stat-box">
+              <div class="hud-label">DISTANCE</div>
+              <div id="hud-distance" class="hud-value">0m</div>
+            </div>
+            <div class="hud-stat-box gold-stat">
+              <div class="hud-label">BITS</div>
+              <div id="hud-coins" class="hud-value">0</div>
+            </div>
+          </div>
+
+          <div class="hud-right">
+            <!-- Threat Radar (Hunter Apex Boss) -->
+            <div id="hud-threat" class="hud-threat-box">
+              <div class="hud-label">HUNTER APEX</div>
+              <div id="hud-threat-dist" class="hud-value">38m</div>
+            </div>
+
+            <!-- Combo Multiplier Badge -->
+            <div id="hud-combo" class="hud-combo-badge hidden">
+              <span id="hud-combo-val" class="combo-num">x2</span>
+              <span id="hud-combo-tier" class="combo-tier">SWEET</span>
+            </div>
+
+            <!-- Pause Button -->
+            <button id="btn-pause" class="btn-icon-pause" title="Pause Game [P]">❚❚</button>
+          </div>
+        </div>
+
+        <!-- Powerup Badges -->
+        <div id="hud-powerups" class="hud-powerups-container">
+          <div id="p-shield" class="powerup-badge" title="Cyber Shield">🛡️</div>
+          <div id="p-magnet" class="powerup-badge" title="Coin Magnet">🧲</div>
+          <div id="p-multiplier" class="powerup-badge" title="2x Score">⚡</div>
+          <div id="p-jetpack" class="powerup-badge" title="Jetpack Rocket">🚀</div>
+        </div>
+
+        <!-- Zone Announcement Banner -->
+        <div id="zone-banner" class="zone-banner hidden">
+          <div id="zone-title" class="zone-title">MAGNET FLUX ZONE</div>
+          <div id="zone-desc" class="zone-desc">Coins gravitationally pulled to runner!</div>
+        </div>
+
+        <!-- Floating Near-Miss & Hype Popups Container -->
+        <div id="popups-container"></div>
+
+        <!-- Form Switcher HUD -->
+        <div class="hud-forms">
+          <div id="btn-form-runner" class="btn-form active" title="Cyber Runner (Jump/Slide)">
+            <span class="form-icon">⚡</span>
+            <span class="form-name">RUNNER</span>
+            <span class="form-key">1</span>
+          </div>
+          <div id="btn-form-drone" class="btn-form" title="Aero-Glider Drone (Glides over low lasers)">
+            <span class="form-icon">🛸</span>
+            <span class="form-name">DRONE</span>
+            <span class="form-key">2</span>
+          </div>
+          <div id="btn-form-orb" class="btn-form" title="Quantum Gyro Orb (Rolls under gantries)">
+            <span class="form-icon">🔮</span>
+            <span class="form-name">ORB</span>
+            <span class="form-key">3</span>
+          </div>
+        </div>
+
+        <!-- Neural Overclock (Bullet Time) Energy Bar -->
+        <div class="hud-energy-container">
+          <div class="energy-bar-bg">
+            <div id="hud-energy-bar" class="energy-bar-fill"></div>
+          </div>
+          <div id="hud-energy-hint" class="energy-hint">NEURAL OVERCLOCK [HOLD SHIFT]</div>
+        </div>
+
+        <!-- Mobile Action Buttons -->
+        <div class="mobile-controls">
+          <button id="btn-mobile-overclock" class="btn-mobile-action" style="border-color: var(--neon-magenta)">TIME</button>
+          <button id="btn-mobile-slide" class="btn-mobile-action">SLIDE</button>
+          <button id="btn-mobile-jump" class="btn-mobile-action">JUMP</button>
+        </div>
+      </div>
+
+      <!-- MAIN MENU -->
+      <div id="main-menu" class="modal-overlay">
+        <div class="modal-panel">
+          <h1 class="title-glitch">RUN AND RUN</h1>
+          <div class="title-sub">NEO-TOKYO CYBERPUNK ENDLESS RUNNER</div>
+
+          <div class="menu-stats-row">
+            <div class="menu-stat">
+              <div class="stat-title">PERSONAL BEST</div>
+              <div id="menu-best" class="stat-num">0</div>
+            </div>
+            <div class="menu-stat">
+              <div class="stat-title">QUANTUM BITS</div>
+              <div id="menu-coins" class="stat-num" style="color: var(--neon-yellow)">0</div>
+            </div>
+          </div>
+
+          <div class="menu-buttons">
+            <button id="btn-play" class="btn-cyber btn-cyber-primary">START RUN</button>
+            <button id="btn-daily" class="btn-cyber btn-cyber-daily">DAILY CHALLENGE</button>
+            <button id="btn-shop" class="btn-cyber">CYBER GARAGE</button>
+            <button id="btn-missions" class="btn-cyber">MISSIONS</button>
+            <button id="btn-settings" class="btn-cyber">SETTINGS</button>
+            <button id="btn-controls" class="btn-cyber">HOW TO PLAY</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAUSE MENU -->
+      <div id="pause-menu" class="modal-overlay hidden">
+        <div class="modal-panel" style="max-width: 420px">
+          <h2 class="title-glitch" style="font-size: 32px">PAUSED</h2>
+          <div class="title-sub">SYSTEM STANDBY</div>
+
+          <div class="menu-buttons">
+            <button id="btn-resume" class="btn-cyber btn-cyber-primary">RESUME</button>
+            <button id="btn-pause-restart" class="btn-cyber">RESTART</button>
+            <button id="btn-pause-menu" class="btn-cyber">MAIN MENU</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- GAME OVER MENU -->
+      <div id="game-over-menu" class="modal-overlay hidden">
+        <div class="modal-panel">
+          <h2 class="title-glitch" style="font-size: 36px; color: var(--neon-magenta)">SYSTEM TERMINATED</h2>
+          <div id="go-mode-tag" class="title-sub">CAUGHT BY HUNTER APEX</div>
+
+          <div class="go-stats-grid">
+            <div class="go-stat-card">
+              <div class="go-stat-title">FINAL SCORE</div>
+              <div id="go-score" class="go-stat-val">0</div>
+            </div>
+            <div class="go-stat-card">
+              <div class="go-stat-title">DISTANCE</div>
+              <div id="go-distance" class="go-stat-val">0m</div>
+            </div>
+            <div class="go-stat-card">
+              <div class="go-stat-title">BITS COLLECTED</div>
+              <div id="go-coins" class="go-stat-val" style="color: var(--neon-yellow)">0</div>
+            </div>
+            <div class="go-stat-card">
+              <div class="go-stat-title">NEAR MISSES</div>
+              <div id="go-nearmiss" class="go-stat-val" style="color: var(--neon-cyan)">0</div>
+            </div>
+          </div>
+
+          <div style="font-family: 'Orbitron'; font-size: 13px; color: #8899bb; margin-bottom: 20px;">
+            ALL-TIME BEST: <span id="go-best" style="color: #ffffff; font-weight: 700;">0</span>
+          </div>
+
+          <div class="menu-buttons">
+            <button id="btn-restart" class="btn-cyber btn-cyber-primary">RUN AGAIN</button>
+            <button id="btn-share" class="btn-cyber">COPY SCORE</button>
+            <button id="btn-go-menu" class="btn-cyber">MAIN MENU</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CYBER GARAGE (SHOP) -->
+      <div id="shop-menu" class="modal-overlay hidden">
+        <div class="modal-panel">
+          <button class="btn-close-modal">✕</button>
+          <h2 class="title-glitch" style="font-size: 28px">CYBER GARAGE</h2>
+          <div class="title-sub">BALANCE: <span id="shop-coins" style="color: var(--neon-yellow); font-weight: 700;">0</span> BITS</div>
+
+          <div id="shop-items-grid" class="shop-grid"></div>
+        </div>
+      </div>
+
+      <!-- MISSIONS MODAL -->
+      <div id="missions-menu" class="modal-overlay hidden">
+        <div class="modal-panel">
+          <button class="btn-close-modal">✕</button>
+          <h2 class="title-glitch" style="font-size: 28px">DIRECTIVE MISSIONS</h2>
+          <div class="title-sub">COMPLETE OBJECTIVES FOR BONUS BITS</div>
+
+          <div id="missions-list" class="missions-list"></div>
+        </div>
+      </div>
+
+      <!-- SETTINGS MODAL -->
+      <div id="settings-menu" class="modal-overlay hidden">
+        <div class="modal-panel" style="max-width: 440px">
+          <button class="btn-close-modal">✕</button>
+          <h2 class="title-glitch" style="font-size: 28px">SYSTEM CONFIG</h2>
+          <div class="title-sub">AUDIO & VISUAL PERFORMANCE</div>
+
+          <div class="setting-row">
+            <span class="setting-label">SFX VOLUME</span>
+            <input type="range" id="setting-sfx-vol" class="setting-input" min="0" max="100" value="80">
+          </div>
+
+          <div class="setting-row">
+            <span class="setting-label">SYNTH BEAT VOLUME</span>
+            <input type="range" id="setting-music-vol" class="setting-input" min="0" max="100" value="50">
+          </div>
+
+          <div class="setting-row">
+            <span class="setting-label">NEON BLOOM GLOW</span>
+            <input type="checkbox" id="setting-bloom" class="setting-input" checked>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTROLS & HOW TO PLAY MODAL -->
+      <div id="controls-modal" class="modal-overlay hidden">
+        <div class="modal-panel" style="max-width: 520px">
+          <button class="btn-close-modal">✕</button>
+          <h2 class="title-glitch" style="font-size: 26px">NEURAL PROTOCOLS</h2>
+          <div class="title-sub">HOW TO SURVIVE THE RUN</div>
+
+          <div class="controls-grid">
+            <div class="control-item">
+              <div class="control-key">A / D or ◄ / ► / Swipe</div>
+              <div class="control-desc">Snappy 3-lane horizontal dash</div>
+            </div>
+            <div class="control-item">
+              <div class="control-key">W / ▲ / Space / Swipe Up</div>
+              <div class="control-desc">Jump over laser beams & gaps</div>
+            </div>
+            <div class="control-item">
+              <div class="control-key">S / ▼ / Swipe Down</div>
+              <div class="control-desc">Slide under overhead gantries / drop</div>
+            </div>
+            <div class="control-item">
+              <div class="control-key">F / G / Gravity Pads</div>
+              <div class="control-desc">Flip gravity to run upside down on ceiling!</div>
+            </div>
+            <div class="control-item">
+              <div class="control-key">1, 2, 3 or Q / E</div>
+              <div class="control-desc">Shape-shift: Runner (wall/slide), Drone (glides over low lasers), Orb (rolls under gantries)</div>
+            </div>
+            <div class="control-item">
+              <div class="control-key">Hold SHIFT / TIME Button</div>
+              <div class="control-desc">Neural Overclock: slow world time to 0.35x to weave through intense obstacles!</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Bootstrap -->
+  <script type="module" src="./js/game.js"></script>
+</body>
+</html>
